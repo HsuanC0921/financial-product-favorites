@@ -11,8 +11,40 @@
 | POST | `/api/auth/login` | 以表單格式送出 `userId`、`password`，成功回 204 |
 | POST | `/api/auth/logout` | 登出，回 204 |
 | GET | `/api/me` | 目前使用者的資料、預設扣款帳號與可用的扣款帳號 |
+| POST | `/api/me/accounts` | 新增扣款帳號，回 201 |
 | GET | `/api/favorites` | 喜好清單，每次最多 100 筆，用 `afterSn` 接續下一頁 |
 | GET | `/api/favorites/{sn}` | 單筆喜好，`ETag` 標頭帶版本號 |
+| POST | `/api/favorites` | 新增喜好，回 201，`Location` 指向新的資料 |
+| PUT | `/api/favorites/{sn}` | 修改喜好，`If-Match` 帶讀取時的 `ETag`，回 200 與新的 `ETag` |
+| DELETE | `/api/favorites/{sn}` | 刪除喜好，`If-Match` 帶讀取時的 `ETag`，回 204 |
+
+## 請求內容
+
+新增與修改喜好使用相同的內容。總手續費與總金額由後端計算，不接受前端傳入。
+
+```json
+{
+  "productName": "心悅台灣成長 ETF",
+  "price": "45.60",
+  "feeRate": "0.001425",
+  "purchaseQuantity": 1000,
+  "account": "1111999666",
+  "note": "長期持有"
+}
+```
+
+| 欄位 | 型別 | 規則 |
+| --- | --- | --- |
+| `productName` | 字串 | 必填，最多 100 字，前後空白會去掉 |
+| `price` | 十進位字串 | 必填，大於 0，最多 10 位整數、2 位小數 |
+| `feeRate` | 十進位字串 | 必填，0 到 1，最多 8 位小數。`0.001425` 代表 0.1425% |
+| `purchaseQuantity` | 整數 | 必填，1 到 1,000,000，帶小數回 400 |
+| `account` | 字串 | 必填，1 到 32 位數字，必須是自己的扣款帳號，否則回 422 |
+| `note` | 字串 | 選填，最多 200 字 |
+
+出現表格以外的欄位（例如 `userId`）回 400。
+
+新增扣款帳號的內容是 `{"account": "1111999888", "accountName": "薪轉戶"}`：`account` 為 1 到 32 位數字，`accountName` 必填、最多 50 字。帳號已被任何人登錄過，一律回 409。
 
 ## 回應範例
 
@@ -67,6 +99,10 @@ Content-Type: application/json
 | 401 | `UNAUTHENTICATED` | 未登入或 Session 已失效 |
 | 403 | `FORBIDDEN` | CSRF 驗證失敗 |
 | 404 | `NOT_FOUND` | 資料不存在，或屬於別的使用者 |
+| 409 | `ACCOUNT_TAKEN` | 扣款帳號已被登錄 |
+| 412 | `VERSION_CONFLICT` | 資料在讀取後已被修改，`If-Match` 的版本過期 |
+| 422 | `UNKNOWN_ACCOUNT` | 扣款帳號不屬於此使用者 |
+| 428 | `PRECONDITION_REQUIRED` | 修改或刪除時缺少 `If-Match` |
 | 500 | `INTERNAL_ERROR` | 未預期的錯誤，細節只寫進伺服器記錄 |
 
 Spring MVC 內建的其他錯誤，例如 405 不支援的方法、415 的 `Content-Type` 不是 `application/json`，也用相同的格式回應。

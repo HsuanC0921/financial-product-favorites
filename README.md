@@ -8,15 +8,28 @@
 
 - 登入與登出，每位使用者只看得到自己的資料。
 - 查詢喜好清單：產品名稱、扣款帳號、總手續費、總金額，並回傳使用者的 Email。清單超過 100 筆時用 `afterSn` 接續。
+- 新增、修改、刪除喜好。
+- 新增自己的扣款帳號。
+- 兩個人同時修改同一筆資料時，後送出的人會收到衝突提示，而不是悄悄覆蓋。
+
+## 設計重點
+
+下列幾項是設計時做過取捨的地方，原因寫在各份文件：
+
+- 資料庫存取只用 Stored Procedure，應用程式的資料庫帳號只有 EXECUTE：[為什麼不用 JPA](docs/ARCHITECTURE.md#為什麼用-stored-procedure-加-jdbcclient不用-jpa)
+- 清單用 `afterSn` 接續，不用頁碼：[原因](docs/ARCHITECTURE.md#為什麼清單用-aftersn-接續不用頁碼)
+- 兩人同時修改以版本號偵測，後送出的人會收到衝突提示：見 [docs/SECURITY.md](docs/SECURITY.md) 的「並行修改」
 
 ## 題目規格對照
 
 | 題目要求 | 實作與位置 |
 | --- | --- |
 | 後端分為 Presentation、Business、Data、Shared 4 層 | `presentation`、`service`、`repository`、`common` 4 個套件，說明見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
 | 以 Maven 或 Gradle 建置 | Maven，使用專案內的 Maven Wrapper |
 | 資料庫存取一律透過 Stored Procedure | 9 支 Stored Procedure，位於 `DB/procedures/`。後端只執行 `CALL`，應用程式的資料庫帳號也只有 EXECUTE 權限 |
 | DDL 與 DML 放在專案的 `DB` 資料夾 | `DB/ddl/` 與 `DB/dml/`，另有 `DB/procedures/` |
+| 防範 SQL Injection | 參數一律以 `?` 綁定，不拼接 SQL 字串，見 [docs/SECURITY.md](docs/SECURITY.md) |
 | 資料表至少包含 User、Product、Like List | `app_user`、`product`、`like_list`，另加 `user_account` 保存使用者可用的扣款帳號，欄位見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#資料模型) |
 
 ## 文件
@@ -26,6 +39,7 @@
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 系統架構、後端分層、資料模型、設計決策 |
 | [資料庫設計](docs/ARCHITECTURE.md#資料模型) | 四張資料表的 ER 圖與欄位限制，GitHub 上直接顯示圖 |
 | [docs/API.md](docs/API.md) | API 清單與狀態碼 |
+| [docs/SECURITY.md](docs/SECURITY.md) | 已處理的安全威脅與做法、相依套件修補 |
 | [DB/README.md](DB/README.md) | 資料庫腳本的執行順序與重置方式 |
 
 ## 技術
@@ -46,7 +60,7 @@ financial-product-favorites/
 ├─ backend/    Spring Boot REST API
 ├─ frontend/   Vue 前端
 ├─ DB/         資料庫腳本，分成 ddl、procedures、dml 3 個資料夾
-└─ docs/       架構與資料模型說明
+└─ docs/       架構、API 與安全性說明
 ```
 
 ## 快速開始
