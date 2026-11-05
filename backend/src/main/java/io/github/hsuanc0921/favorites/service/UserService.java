@@ -25,4 +25,8 @@ public class UserService {
 	public List<UserAccount> accounts(String userId) {
 		return userRepository.listAccounts(userId);
 	}
+
+	public UserAccount addAccount(String userId, String account, String accountName) {
+		return userRepository.addAccount(userId, account, accountName);
+	}
 }

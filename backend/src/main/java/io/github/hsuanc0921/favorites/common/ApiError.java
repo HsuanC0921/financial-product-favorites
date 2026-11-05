@@ -17,6 +17,7 @@ public record ApiError(String code, String message) {
 		"缺少 If-Match 標頭，無法確認你看到的是不是最新版本"
 	);
 	public static final ApiError UNKNOWN_ACCOUNT = new ApiError("UNKNOWN_ACCOUNT", "這個扣款帳號不在你的帳號清單裡");
+	public static final ApiError ACCOUNT_TAKEN = new ApiError("ACCOUNT_TAKEN", "這個帳號已經登錄過了");
 
 	/** 只用於寫死的常數，不含引號與反斜線 */
 	public String toJson() {

@@ -1,10 +1,14 @@
 package io.github.hsuanc0921.favorites.repository;
 
+import io.github.hsuanc0921.favorites.common.ApiError;
+import io.github.hsuanc0921.favorites.common.BusinessException;
 import io.github.hsuanc0921.favorites.common.model.AuthUser;
 import io.github.hsuanc0921.favorites.common.model.UserAccount;
 import io.github.hsuanc0921.favorites.common.model.UserProfile;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -47,5 +51,18 @@ public class UserRepository {
 			.param(userId)
 			.query((rs, rowNum) -> new UserAccount(rs.getString("account"), rs.getString("account_name")))
 			.list();
+	}
+
+	/** 帳號全系統唯一，已經被任何人登錄過都回 409 */
+	public UserAccount addAccount(String userId, String account, String accountName) {
+		try {
+			return jdbc
+				.sql("CALL sp_user_account_add(?, ?, ?)")
+				.params(List.of(userId, account, accountName))
+				.query((rs, rowNum) -> new UserAccount(rs.getString("account"), rs.getString("account_name")))
+				.single();
+		} catch (DuplicateKeyException e) {
+			throw new BusinessException(HttpStatus.CONFLICT, ApiError.ACCOUNT_TAKEN);
+		}
 	}
 }
