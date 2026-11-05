@@ -1,13 +1,23 @@
 package io.github.hsuanc0921.favorites.presentation;
 
+import io.github.hsuanc0921.favorites.common.ApiError;
+import io.github.hsuanc0921.favorites.common.BusinessException;
 import io.github.hsuanc0921.favorites.common.model.Favorite;
 import io.github.hsuanc0921.favorites.service.FavoriteService;
 import io.github.hsuanc0921.favorites.service.UserService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.net.URI;
 import java.security.Principal;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,5 +51,54 @@ class FavoriteController {
 	ResponseEntity<FavoriteResponse> get(Principal principal, @PathVariable @Min(1) long sn) {
 		Favorite favorite = favoriteService.get(principal.getName(), sn);
 		return ResponseEntity.ok().eTag(String.valueOf(favorite.version())).body(FavoriteResponse.from(favorite));
+	}
+
+	@PostMapping
+	ResponseEntity<FavoriteResponse> create(Principal principal, @Valid @RequestBody FavoriteRequest request) {
+		Favorite created = favoriteService.create(principal.getName(), request.toInput());
+		return ResponseEntity.created(URI.create("/api/favorites/" + created.sn()))
+			.eTag(String.valueOf(created.version()))
+			.body(FavoriteResponse.from(created));
+	}
+
+	@PutMapping("/{sn}")
+	ResponseEntity<FavoriteResponse> update(
+		Principal principal,
+		@PathVariable @Min(1) long sn,
+		@RequestHeader(value = "If-Match", required = false) String ifMatch,
+		@Valid @RequestBody FavoriteRequest request
+	) {
+		Favorite updated = favoriteService.update(principal.getName(), sn, expectedVersion(ifMatch), request.toInput());
+		return ResponseEntity.ok().eTag(String.valueOf(updated.version())).body(FavoriteResponse.from(updated));
+	}
+
+	@DeleteMapping("/{sn}")
+	ResponseEntity<Void> delete(
+		Principal principal,
+		@PathVariable @Min(1) long sn,
+		@RequestHeader(value = "If-Match", required = false) String ifMatch
+	) {
+		favoriteService.delete(principal.getName(), sn, expectedVersion(ifMatch));
+		return ResponseEntity.noContent().build();
+	}
+
+	/** If-Match 帶的是讀取時拿到的 ETag，例如 "3"，缺少就要求補上，格式不對回 400 */
+	private static long expectedVersion(String ifMatch) {
+		if (ifMatch == null) {
+			throw new BusinessException(HttpStatus.PRECONDITION_REQUIRED, ApiError.PRECONDITION_REQUIRED);
+		}
+		String value = ifMatch.strip();
+		if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+			value = value.substring(1, value.length() - 1);
+		}
+		try {
+			long version = Long.parseLong(value);
+			if (version >= 0) {
+				return version;
+			}
+		} catch (NumberFormatException ignored) {
+			// 落到下面統一回 400
+		}
+		throw new BusinessException(HttpStatus.BAD_REQUEST, ApiError.of(HttpStatus.BAD_REQUEST));
 	}
 }

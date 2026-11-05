@@ -1,6 +1,7 @@
 package io.github.hsuanc0921.favorites.presentation;
 
 import io.github.hsuanc0921.favorites.common.ApiError;
+import io.github.hsuanc0921.favorites.common.BusinessException;
 import io.github.hsuanc0921.favorites.common.FavoriteNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(FavoriteNotFoundException.class)
 	ResponseEntity<ApiError> notFound() {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.of(HttpStatus.NOT_FOUND));
+	}
+
+	@ExceptionHandler(BusinessException.class)
+	ResponseEntity<ApiError> business(BusinessException ex) {
+		return ResponseEntity.status(ex.status()).body(ex.error());
 	}
 
 	@ExceptionHandler(Exception.class)

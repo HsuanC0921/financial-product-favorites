@@ -8,6 +8,16 @@ public record ApiError(String code, String message) {
 	public static final ApiError UNAUTHENTICATED = new ApiError("UNAUTHENTICATED", "請先登入");
 	public static final ApiError FORBIDDEN = new ApiError("FORBIDDEN", "這項操作被拒絕，請重新整理頁面後再試");
 
+	public static final ApiError VERSION_CONFLICT = new ApiError(
+		"VERSION_CONFLICT",
+		"這筆資料剛被修改過，請重新載入後再操作"
+	);
+	public static final ApiError PRECONDITION_REQUIRED = new ApiError(
+		"PRECONDITION_REQUIRED",
+		"缺少 If-Match 標頭，無法確認你看到的是不是最新版本"
+	);
+	public static final ApiError UNKNOWN_ACCOUNT = new ApiError("UNKNOWN_ACCOUNT", "這個扣款帳號不在你的帳號清單裡");
+
 	/** 只用於寫死的常數，不含引號與反斜線 */
 	public String toJson() {
 		return "{\"code\":\"" + code + "\",\"message\":\"" + message + "\"}";
