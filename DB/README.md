@@ -29,3 +29,4 @@ PowerShell 不支援 `<` 導向，所以改用 `source`。在 Git Bash 或 cmd �
 
 重置資料庫：執行 `DROP DATABASE favorites;`，再從第 1 步重新來過。`ddl/02_accounts.sql` 可以重複執行，已存在的資料庫帳號，密碼不會被覆寫。
 
+資料表的關聯與欄位限制見[資料模型](../docs/ARCHITECTURE.md#資料模型)。
