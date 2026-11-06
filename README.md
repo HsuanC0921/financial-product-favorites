@@ -33,6 +33,7 @@
 | 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
 | 以 Maven 或 Gradle 建置 | Maven，使用專案內的 Maven Wrapper |
 | 資料庫存取一律透過 Stored Procedure | 9 支 Stored Procedure，位於 `DB/procedures/`。後端只執行 `CALL`，應用程式的資料庫帳號也只有 EXECUTE 權限 |
+| 異動多張資料表時使用 Transaction | 新增、修改、刪除都同時異動 Product 與 Like List，`FavoriteService` 以 `@Transactional` 包成同一個交易，由 `FavoriteTransactionTests` 確認新增失敗時整筆回復 |
 | DDL 與 DML 放在專案的 `DB` 資料夾 | `DB/ddl/` 與 `DB/dml/`，另有 `DB/procedures/` |
 | 防範 SQL Injection | 參數一律以 `?` 綁定，不拼接 SQL 字串，見 [docs/SECURITY.md](docs/SECURITY.md) |
 | 防範 XSS | 前端只用 Vue 的文字插值、不用 `v-html`，Nginx 再加上 Content-Security-Policy，見 [docs/SECURITY.md](docs/SECURITY.md) |
@@ -46,6 +47,7 @@
 | [資料庫設計](docs/ARCHITECTURE.md#資料模型) | 四張資料表的 ER 圖與欄位限制，GitHub 上直接顯示圖 |
 | [docs/API.md](docs/API.md) | API 清單與狀態碼 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 已處理的安全威脅與做法、相依套件修補 |
+| [docs/TESTING.md](docs/TESTING.md) | 測試範圍與執行方式 |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 不經 Nginx 的開發模式 |
 | [DB/README.md](DB/README.md) | 資料庫腳本的執行順序與重置方式 |
 
@@ -69,7 +71,7 @@ financial-product-favorites/
 ├─ frontend/   Vue 前端
 ├─ DB/         資料庫腳本，分成 ddl、procedures、dml 3 個資料夾
 ├─ deploy/     Nginx 設定
-└─ docs/       架構、API 與安全性說明
+└─ docs/       架構、API、安全性、測試與開發說明
 ```
 
 ## 快速開始
@@ -162,9 +164,11 @@ nginx -p deploy -c nginx.conf -s stop
 ```powershell
 cd backend
 .\mvnw.cmd verify
+cd ..\frontend
+npm run test:unit -- --run
 ```
 
-後端的整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。
+後端 47 個測試，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 28 個。各測試涵蓋的範圍與程式碼檢查指令見 [docs/TESTING.md](docs/TESTING.md)。
 
 ## 第三方素材
 
