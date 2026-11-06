@@ -19,7 +19,7 @@
 - 資料庫存取只用 Stored Procedure，應用程式的資料庫帳號只有 EXECUTE：[為什麼不用 JPA](docs/ARCHITECTURE.md#為什麼用-stored-procedure-加-jdbcclient不用-jpa)
 - 清單用 `afterSn` 接續，不用頁碼：[原因](docs/ARCHITECTURE.md#為什麼清單用-aftersn-接續不用頁碼)
 - 防範 XSS 是在顯示時跳脫，不在收到資料時過濾：[原因](docs/SECURITY.md)
-- 兩人同時修改以版本號偵測，後送出的人會收到衝突提示：見 [docs/SECURITY.md](docs/SECURITY.md) 的「並行修改」
+- 兩人同時修改以版本號偵測，後送出的人會收到衝突提示：[並行更新與版本衝突測試](docs/TESTING.md#寫入交易與安全性)
 - 沒做的功能與原因，例如註冊與軟刪除：[評估後沒有做的改進](#評估後沒有做的改進)
 
 ## 題目規格對照
@@ -36,7 +36,7 @@
 | 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
 | 以 Maven 或 Gradle 建置 | Maven，使用專案內的 Maven Wrapper |
 | 資料庫存取一律透過 Stored Procedure | 9 支 Stored Procedure，位於 `DB/procedures/`。後端只執行 `CALL`，應用程式的資料庫帳號也只有 EXECUTE 權限 |
-| 異動多張資料表時使用 Transaction | 新增、修改、刪除都同時異動 Product 與 Like List，`FavoriteService` 以 `@Transactional` 包成同一個交易，由 `FavoriteTransactionTests` 確認新增失敗時整筆回復 |
+| 異動多張資料表時使用 Transaction | 新增、修改、刪除都同時異動 Product 與 Like List，`FavoriteService` 以 `@Transactional` 包成同一個交易，由 [FavoriteTransactionTests](docs/TESTING.md#寫入交易與安全性) 確認新增失敗時觸發回滾 |
 | DDL 與 DML 放在專案的 `DB` 資料夾 | `DB/ddl/` 與 `DB/dml/`，另有 `DB/procedures/` |
 | 防範 SQL Injection | 參數一律以 `?` 綁定，不拼接 SQL 字串，見 [docs/SECURITY.md](docs/SECURITY.md) |
 | 防範 XSS | 前端只用 Vue 的文字插值、不用 `v-html`，Nginx 再加上 Content-Security-Policy，見 [docs/SECURITY.md](docs/SECURITY.md) |
@@ -122,7 +122,7 @@ Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
 
 #### 2. 建置
 
-後端建置時會跑測試，測試連的是步驟 1 建好的資料庫。
+後端建置時會跑[測試](docs/TESTING.md#範圍)，整合測試連的是步驟 1 建好的資料庫。
 
 ```powershell
 cd backend
@@ -196,7 +196,9 @@ cd ..\frontend
 npm run test:unit -- --run
 ```
 
-後端 47 個測試，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 28 個。各測試涵蓋的範圍、程式碼檢查指令與壓力測試結果見 [docs/TESTING.md](docs/TESTING.md)。
+後端有 [47 個測試](docs/TESTING.md#範圍)，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 [28 個金額與輸入檢查案例](docs/TESTING.md#金額與輸入邊界)，另有[瀏覽器流程驗證](docs/TESTING.md#瀏覽器流程驗證)。
+
+壓測的操作情境、通過門檻、修正前後數據與資料庫查核，見[壓力測試結果](docs/TESTING.md#壓力測試)。尚未自動化與未涵蓋的部分，見[驗證限制](docs/TESTING.md#未自動化的部分)。
 
 ## 已知限制
 
