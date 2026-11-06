@@ -82,7 +82,10 @@ export async function fetchMe(): Promise<Me> {
 
 export async function login(userId: string, password: string): Promise<void> {
   // 第一次載入時 /api/me 的 401 會順便發 CSRF Cookie，萬一被清掉就先補領
-  if (!csrfToken()) await fetchMe().catch(() => undefined)
+  if (!csrfToken())
+    await fetchMe().catch((e: unknown) => {
+      if (!(e instanceof ApiError && e.status === 401)) throw e
+    })
   await request('POST', '/api/auth/login', { form: { userId, password } })
 }
 

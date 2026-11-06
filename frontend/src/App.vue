@@ -72,7 +72,7 @@ onMounted(loadMe)
   <main :class="{ guest: ready && !me }">
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="!ready" role="status">載入中…</p>
-    <FavoritesView v-else-if="me" :me="me" :refresh-me="refreshMe" />
+    <FavoritesView v-else-if="me" :key="me.userId" :me="me" :refresh-me="refreshMe" />
     <p v-else-if="error"><button @click="loadMe">重新載入</button></p>
     <template v-else>
       <p v-if="notice" class="notice" role="status">{{ notice }}</p>
