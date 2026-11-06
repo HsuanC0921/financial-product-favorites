@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ApiError, deleteFavorite, errorMessage, listFavorites } from '../api'
+import { ApiError, deleteFavorite, errorMessage, getFavorite, listFavorites } from '../api'
 import type { Favorite, Me } from '../types'
 import FavoriteForm from './FavoriteForm.vue'
 import FavoriteTable from './FavoriteTable.vue'
@@ -63,6 +63,7 @@ async function loadMore() {
     if (id !== loadId) return
     items.value = [...items.value, ...page.items]
     nextAfterSn.value = page.nextAfterSn
+    error.value = ''
   } catch (e) {
     error.value = errorMessage(e)
   } finally {
@@ -101,9 +102,20 @@ async function confirmDelete() {
       await reload()
     } else if (e instanceof ApiError && e.status === 412) {
       // 資料剛被改過：換成最新版本，讓使用者確認後再按一次
-      await reload()
-      deleting.value = items.value.find((i) => i.sn === target.sn) ?? null
-      deleteError.value = '這筆資料剛被修改過，已更新為最新內容，請確認後再刪除'
+      try {
+        const latest = await getFavorite(target.sn)
+        items.value = items.value.map((i) => (i.sn === latest.sn ? latest : i))
+        deleting.value = latest
+        deleteError.value = '這筆資料剛被修改過，已更新為最新內容，請確認後再刪除'
+      } catch (e2) {
+        if (e2 instanceof ApiError && e2.status === 404) {
+          // 取得最新內容時發現已經被刪掉了，同樣視為完成
+          deleting.value = null
+          await reload()
+        } else {
+          deleteError.value = errorMessage(e2)
+        }
+      }
     } else {
       deleteError.value = errorMessage(e)
     }

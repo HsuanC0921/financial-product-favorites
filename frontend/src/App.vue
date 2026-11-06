@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { fetchMe, logout, setSessionExpiredHandler } from './api'
+import { ApiError, errorMessage, fetchMe, logout, setSessionExpiredHandler } from './api'
 import FavoritesView from './components/FavoritesView.vue'
 import LoginForm from './components/LoginForm.vue'
 import type { Me } from './types'
@@ -8,10 +8,12 @@ import type { Me } from './types'
 const me = ref<Me | null>(null)
 const ready = ref(false)
 const notice = ref('')
+const error = ref('')
 
 setSessionExpiredHandler(() => {
   if (me.value) {
     me.value = null
+    error.value = ''
     notice.value = '登入已逾時，請重新登入'
   }
 })
@@ -20,19 +22,29 @@ async function loadMe() {
   try {
     me.value = await fetchMe()
     notice.value = ''
-  } catch {
-    // 未登入：這次請求的 401 也會順便發 CSRF Cookie，登入表單要用
-    me.value = null
+    error.value = ''
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
+      me.value = null
+      error.value = ''
+    } else {
+      error.value = errorMessage(e)
+    }
   } finally {
     ready.value = true
   }
 }
 
 async function signOut() {
-  await logout().catch(() => undefined)
-  me.value = null
-  notice.value = ''
-  await loadMe()
+  try {
+    await logout()
+    me.value = null
+    notice.value = ''
+    error.value = ''
+    await loadMe()
+  } catch (e) {
+    error.value = `尚未完成登出。${errorMessage(e)}`
+  }
 }
 
 onMounted(loadMe)
@@ -54,8 +66,10 @@ onMounted(loadMe)
   </header>
 
   <main>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="!ready" role="status">載入中…</p>
     <FavoritesView v-else-if="me" :me="me" :refresh-me="loadMe" />
+    <p v-else-if="error"><button @click="loadMe">重新載入</button></p>
     <template v-else>
       <p v-if="notice" class="notice" role="status">{{ notice }}</p>
       <LoginForm @logged-in="loadMe" />
