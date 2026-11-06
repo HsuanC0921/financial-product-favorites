@@ -41,4 +41,4 @@ npm exec -- stylelint "src/**/*.{css,vue}"
 
 ## 未自動化的部分
 
-Nginx 的 HTTPS 轉址、安全標頭與登入限流沒有自動化測試，目前以 `curl` 手動確認。安全標頭另以 ZAP 被動掃描過，見[弱點掃描](SECURITY.md#弱點掃描)。前端元件與 `api.ts` 的錯誤處理也還沒有測試。
+Nginx 的 HTTPS 轉址、安全標頭與登入限流沒有自動化測試，目前以 `curl` 手動確認。安全標頭另以 ZAP 被動掃描過，見[弱點掃描](SECURITY.md#弱點掃描)。Docker Compose 的啟動也沒有自動化，以手動啟動後登入、新增、查詢與刪除確認過。前端元件與 `api.ts` 的錯誤處理也還沒有測試。

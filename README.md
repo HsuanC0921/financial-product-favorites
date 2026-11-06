@@ -60,7 +60,7 @@
 | --- | --- |
 | 後端 | Java 21、Spring Boot 4.1.2（Spring Framework 7.0、Spring Security 7.1）、Spring JDBC（`JdbcClient`）、MySQL Connector/J 9.7、Bean Validation（Hibernate Validator 9.1） |
 | 資料庫 | MySQL 8.4，Stored Procedure 存取資料 |
-| Web Server | Nginx 1.31 |
+| Web Server | Nginx 1.31（Docker 版用 `nginx:1.31-alpine` 映像） |
 | 前端 | Vue 3.5、TypeScript 6.0、Vite 8、big.js 7（金額預估用十進位小數計算） |
 | 建置 | Maven 3.10（Maven Wrapper）、npm 10（Node.js 22） |
 | 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc，前端用 Vitest 5.0 |
@@ -73,15 +73,40 @@ financial-product-favorites/
 ├─ backend/    Spring Boot REST API
 ├─ frontend/   Vue 前端
 ├─ DB/         資料庫腳本，分成 ddl、procedures、dml 3 個資料夾
-├─ deploy/     Nginx 設定
-└─ docs/       架構、API、安全性、測試與開發說明
+├─ deploy/     Nginx 設定，docker/ 放容器版的建置檔
+├─ docs/       架構、API、安全性、測試與開發說明
+└─ compose.yaml  Docker Compose 的啟動設定
 ```
 
 ## 快速開始
 
-以下步驟以 Nginx、Spring Boot、MySQL 三層啟動，指令都在專案根目錄執行。
+### 用 Docker 啟動
 
-### 環境需求
+只需要安裝 Docker，不必另外裝 JDK、Node.js、MySQL 與 Nginx。在專案根目錄執行：
+
+```powershell
+docker compose up
+```
+
+第一次會下載映像檔並建置，所需時間依網路速度而定。看到 3 個容器都啟動後，開啟 `https://localhost`，帳號密碼見[示範使用者](#示範使用者)。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。停止並清除資料庫：
+
+```powershell
+docker compose down -v
+```
+
+容器版沿用同一份 `deploy/nginx.conf` 與 `DB/` 的腳本，差別有 3 處：
+
+- Nginx 的自簽憑證在建置映像檔時產生，不需要手動安裝的步驟 3。
+- 建置後端時不跑測試，因為那時資料庫還沒有起來。
+- 後端與資料庫在不同的容器，所以多建一個連線來源為 `%` 的 `favorites_app`，權限同樣只有 EXECUTE，見 `DB/ddl/docker_app_user.sql`。
+
+主機只開放 Nginx 的 80 與 443。容器內的後端監聽所有介面，Nginx 才連得到，但它與資料庫的埠都沒有對主機開放，只有 Compose 內部的網路可連。80 或 443 已被占用時，例如本機已有別的網頁伺服器，要先停掉。容器版的資料庫密碼同樣是公開的示範值，對外開放前要同時改 `DB/ddl/docker_app_user.sql` 與 `FAVORITES_DB_PASSWORD`。
+
+### 手動安裝
+
+不使用 Docker 時，以下步驟以 Nginx、Spring Boot、MySQL 三層啟動，指令都在專案根目錄執行。
+
+#### 環境需求
 
 - JDK 21，並設定好 `JAVA_HOME`
 - Node.js 22.18 以上的 22.x，或 24.12 以上
@@ -91,11 +116,11 @@ financial-product-favorites/
 
 Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
 
-### 1. 建立資料庫
+#### 1. 建立資料庫
 
 依 [DB/README.md](DB/README.md) 的順序，以管理員帳號執行 5 支腳本。腳本會建立資料庫、資料表、2 個資料庫帳號、Stored Procedure 與示範資料。
 
-### 2. 建置
+#### 2. 建置
 
 後端建置時會跑測試，測試連的是步驟 1 建好的資料庫。
 
@@ -108,7 +133,7 @@ npm run build
 cd ..
 ```
 
-### 3. 產生本機憑證
+#### 3. 產生本機憑證
 
 `deploy/certs/` 不納入版本控制，每台機器各自產生：
 
@@ -117,7 +142,7 @@ New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
 & 'C:\Program Files\Git\usr\bin\openssl.exe' req -x509 -newkey rsa:2048 -nodes -days 365 -keyout deploy/certs/key.pem -out deploy/certs/cert.pem -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
 ```
 
-### 4. 啟動
+#### 4. 啟動
 
 各開一個終端機，分別啟動後端與 Nginx：
 
