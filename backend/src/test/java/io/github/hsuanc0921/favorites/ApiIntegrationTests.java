@@ -2,8 +2,10 @@ package io.github.hsuanc0921.favorites;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -90,5 +93,113 @@ class ApiIntegrationTests {
 			.getContentAsString();
 
 		assertThat(othersRecord).isEqualTo(missingRecord);
+	}
+
+	@Test
+	void notLoggedInGets401() throws Exception {
+		mvc.perform(get("/api/favorites"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+	}
+
+	@Test
+	void writeWithoutCsrfTokenIsRejected() throws Exception {
+		mvc.perform(
+			post("/api/favorites").session(loginA()).contentType(MediaType.APPLICATION_JSON).content(favoriteJson(""))
+		)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	void smugglingAnotherUserIdIsRejected() throws Exception {
+		// 使用者 ID 只能取自登入狀態，請求裡多帶的欄位一律不收
+		mvc.perform(
+			post("/api/favorites")
+				.with(csrf())
+				.session(loginA())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(favoriteJson(",\"userId\":\"" + USER_C + "\""))
+		)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	@Test
+	void otherUsersFavoriteCannotBeUpdatedOrDeleted() throws Exception {
+		MockHttpSession b = login(USER_B, "DemoUserB#2026");
+
+		// 紀錄 1 屬於使用者 A，B 改或刪都跟資料不存在一樣
+		mvc.perform(
+			put("/api/favorites/1")
+				.with(csrf())
+				.session(b)
+				.header("If-Match", "\"0\"")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(favoriteJson(""))
+		)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+		mvc.perform(delete("/api/favorites/1").with(csrf()).session(b).header("If-Match", "\"0\"")).andExpect(
+			status().isNotFound()
+		);
+
+		mvc.perform(get("/api/favorites/1").session(loginA())).andExpect(status().isOk());
+	}
+
+	@Test
+	void accountAlreadyRegisteredCannotBeAddedAgain() throws Exception {
+		// 自己已有的帳號、別人的帳號，回應一樣，不透露帳號屬於誰
+		String own = mvc
+			.perform(
+				post("/api/me/accounts")
+					.with(csrf())
+					.session(loginA())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(accountJson("1111999666"))
+			)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("ACCOUNT_TAKEN"))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		String others = mvc
+			.perform(
+				post("/api/me/accounts")
+					.with(csrf())
+					.session(login(USER_C, "DemoUserC#2026"))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(accountJson("1111999666"))
+			)
+			.andExpect(status().isConflict())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		assertThat(others).isEqualTo(own);
+	}
+
+	@Test
+	void accountWithNonDigitsIsRejected() throws Exception {
+		mvc.perform(
+			post("/api/me/accounts")
+				.with(csrf())
+				.session(loginA())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(accountJson("1111-999666"))
+		)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	private static String accountJson(String account) {
+		return """
+		{"account":"%s","accountName":"測試帳戶"}""".formatted(account);
+	}
+
+	private static String favoriteJson(String extraFields) {
+		return """
+		{"productName":"測試","price":"10.00","feeRate":"0.001","purchaseQuantity":1,"account":"1111999666"%s}""".formatted(
+			extraFields
+		);
 	}
 }

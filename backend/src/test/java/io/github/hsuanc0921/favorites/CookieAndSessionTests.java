@@ -28,7 +28,22 @@ class CookieAndSessionTests {
 
 	private HttpResponse<String> send(String method, String path, String cookies, String csrf, String form)
 		throws Exception {
+		return send(method, path, cookies, csrf, form, false);
+	}
+
+	/** behindHttpsProxy：模擬 Nginx 終止 TLS 後轉送過來的請求 */
+	private HttpResponse<String> send(
+		String method,
+		String path,
+		String cookies,
+		String csrf,
+		String form,
+		boolean behindHttpsProxy
+	) throws Exception {
 		HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path));
+		if (behindHttpsProxy) {
+			builder.header("X-Forwarded-Proto", "https");
+		}
 		if (cookies != null) {
 			builder.header("Cookie", cookies);
 		}
@@ -91,5 +106,40 @@ class CookieAndSessionTests {
 		assertThat(secondId).isNotEqualTo(firstId);
 		assertThat(send("GET", "/api/me", "JSESSIONID=" + firstId, null, null).statusCode()).isEqualTo(401);
 		assertThat(send("GET", "/api/me", "JSESSIONID=" + secondId, null, null).statusCode()).isEqualTo(200);
+	}
+
+	@Test
+	void sessionStopsWorkingAfterLogout() throws Exception {
+		String csrf = value(setCookie(send("GET", "/api/me", null, null, null), "XSRF-TOKEN").orElseThrow());
+		String csrfCookie = "XSRF-TOKEN=" + csrf;
+		String sessionId = value(
+			setCookie(send("POST", "/api/auth/login", csrfCookie, csrf, loginForm()), "JSESSIONID").orElseThrow()
+		);
+
+		HttpResponse<String> logout = send(
+			"POST",
+			"/api/auth/logout",
+			csrfCookie + "; JSESSIONID=" + sessionId,
+			csrf,
+			null
+		);
+		assertThat(logout.statusCode()).isEqualTo(204);
+		// 就算有人留著舊的 Session ID，登出後也不能再用
+		assertThat(send("GET", "/api/me", "JSESSIONID=" + sessionId, null, null).statusCode()).isEqualTo(401);
+	}
+
+	@Test
+	void cookiesAreSecureOnlyWhenTheOriginalRequestWasHttps() throws Exception {
+		HttpResponse<String> overHttps = send("GET", "/api/me", null, null, null, true);
+		String csrf = value(setCookie(overHttps, "XSRF-TOKEN").orElseThrow());
+		assertThat(setCookie(overHttps, "XSRF-TOKEN").orElseThrow()).contains("Secure");
+
+		HttpResponse<String> login = send("POST", "/api/auth/login", "XSRF-TOKEN=" + csrf, csrf, loginForm(), true);
+		assertThat(login.statusCode()).isEqualTo(204);
+		assertThat(setCookie(login, "JSESSIONID").orElseThrow()).contains("Secure");
+
+		// 開發模式直接走 HTTP，帶 Secure 的 Cookie 瀏覽器不會送回來，所以這時不能加
+		HttpResponse<String> overHttp = send("GET", "/api/me", null, null, null);
+		assertThat(setCookie(overHttp, "XSRF-TOKEN").orElseThrow()).doesNotContain("Secure");
 	}
 }

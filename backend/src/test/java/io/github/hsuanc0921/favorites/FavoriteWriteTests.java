@@ -146,6 +146,57 @@ class FavoriteWriteTests {
 	}
 
 	@Test
+	void largestAllowedValuesAreStoredExactly() throws Exception {
+		MockHttpSession c = loginC();
+		String name = "測".repeat(100);
+		String note = "記".repeat(200);
+
+		long sn = create(c, body(name, "9999999999.99", "1", 1_000_000, C_ACCOUNT, note));
+		mvc.perform(get("/api/favorites/" + sn).session(c))
+			.andExpect(jsonPath("$.productName").value(name))
+			.andExpect(jsonPath("$.note").value(note))
+			.andExpect(jsonPath("$.totalFee").value("9999999999990000.00"))
+			.andExpect(jsonPath("$.totalAmount").value("19999999999980000.00"));
+		remove(c, sn, 0);
+	}
+
+	@Test
+	void htmlInTextFieldsComesBackUnchanged() throws Exception {
+		// 後端不轉義也不過濾，原樣存、原樣回，由前端當純文字顯示
+		MockHttpSession c = loginC();
+		String name = "<script>alert('x')</script>";
+		String note = "<img src=x onerror=alert(1)> & 備註";
+
+		long sn = create(c, body(name, "10.00", "0", 1, C_ACCOUNT, note));
+		mvc.perform(get("/api/favorites/" + sn).session(c))
+			.andExpect(jsonPath("$.productName").value(name))
+			.andExpect(jsonPath("$.note").value(note));
+		remove(c, sn, 0);
+	}
+
+	@Test
+	void updateWithAnotherUsersAccountChangesNothing() throws Exception {
+		MockHttpSession c = loginC();
+		long sn = create(c, body("原本的 ETF", "10.00", "0", 1, C_ACCOUNT, ""));
+
+		// 1111999666 是使用者 A 的帳號
+		mvc.perform(
+			json(put("/api/favorites/" + sn), c, body("改過的 ETF", "20.00", "0", 2, "1111999666", "")).header(
+				"If-Match",
+				"\"0\""
+			)
+		)
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("UNKNOWN_ACCOUNT"));
+
+		mvc.perform(get("/api/favorites/" + sn).session(c))
+			.andExpect(jsonPath("$.productName").value("原本的 ETF"))
+			.andExpect(jsonPath("$.account").value(C_ACCOUNT))
+			.andExpect(jsonPath("$.version").value(0));
+		remove(c, sn, 0);
+	}
+
+	@Test
 	void sameVersionOnlyOneWriterWins() throws Exception {
 		MockHttpSession c = loginC();
 		long sn = create(c, body("10.00", "0", 1));
