@@ -26,6 +26,7 @@ export interface Favorite {
 }
 
 export interface FavoritePage {
+  user: Pick<Me, 'userId' | 'userName' | 'email'>
   items: Favorite[]
   nextAfterSn: number | null
 }

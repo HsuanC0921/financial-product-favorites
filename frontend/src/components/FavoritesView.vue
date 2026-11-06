@@ -43,6 +43,11 @@ async function reload() {
   try {
     const page = await listFavorites()
     if (id !== loadId) return
+    if (page.user.userId !== props.me.userId) {
+      // 跨分頁切換帳號時重載整頁，清除舊身分的畫面狀態
+      window.location.reload()
+      return
+    }
     items.value = page.items
     nextAfterSn.value = page.nextAfterSn
     status.value = 'ready'
@@ -61,10 +66,15 @@ async function loadMore() {
   try {
     const page = await listFavorites(nextAfterSn.value)
     if (id !== loadId) return
+    if (page.user.userId !== props.me.userId) {
+      window.location.reload()
+      return
+    }
     items.value = [...items.value, ...page.items]
     nextAfterSn.value = page.nextAfterSn
     error.value = ''
   } catch (e) {
+    if (id !== loadId) return
     error.value = errorMessage(e)
   } finally {
     loadingMore.value = false
