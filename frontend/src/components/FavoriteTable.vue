@@ -143,8 +143,10 @@ small {
     grid-template-areas:
       'product product'
       'total total'
-      'qty fee'
-      'account actions';
+      'qty qty'
+      'fee fee'
+      'account account'
+      'actions actions';
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem 1rem;
     align-items: start;
@@ -192,15 +194,19 @@ small {
     align-items: baseline;
     justify-content: space-between;
     font-size: 1.125rem;
+    white-space: nowrap;
   }
 
   .qty {
     grid-area: qty;
     text-align: left;
+    white-space: nowrap;
   }
 
   .fee {
     grid-area: fee;
+    text-align: left;
+    white-space: nowrap;
   }
 
   .account {
