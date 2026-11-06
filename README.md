@@ -10,7 +10,7 @@
 - 查詢喜好清單：產品名稱、扣款帳號、總手續費、總金額，並顯示使用者的 Email。清單超過 100 筆時用「載入更多」接續。
 - 新增、修改、刪除喜好。表單即時預估手續費與總金額。
 - 新增自己的扣款帳號。
-- 兩個人同時修改同一筆資料時，後送出的人會收到衝突提示，而不是悄悄覆蓋。
+- 同一筆資料的並行修改以版本號檢查，版本過期時顯示衝突提示。
 
 ## 畫面
 
@@ -48,7 +48,7 @@
 - 資料庫存取只用 Stored Procedure，應用程式的資料庫帳號只有 EXECUTE：[為什麼不用 JPA](docs/ARCHITECTURE.md#為什麼用-stored-procedure-加-jdbcclient不用-jpa)
 - 清單用 `afterSn` 接續，不用頁碼：[原因](docs/ARCHITECTURE.md#為什麼清單用-aftersn-接續不用頁碼)
 - 防範 XSS 是在顯示時跳脫，不在收到資料時過濾：[原因](docs/SECURITY.md)
-- 兩人同時修改以版本號偵測，後送出的人會收到衝突提示：[並行更新與版本衝突測試](docs/TESTING.md#寫入交易與安全性)
+- 以版本號偵測並行修改，版本過期時顯示衝突提示：[並行更新與版本衝突測試](docs/TESTING.md#寫入交易與安全性)
 - 沒做的功能與原因，例如註冊與軟刪除：[評估後沒有做的改進](#評估後沒有做的改進)
 
 ## 題目規格對照
@@ -59,7 +59,7 @@
 | --- | --- |
 | 新增、查詢、刪除、修改喜好 | 介面在 `FavoritesView`，後端由 `FavoriteController` 提供 API，規格見 [docs/API.md](docs/API.md) |
 | 查詢顯示產品名稱清單、扣款帳號、總金額、總手續費、使用者 Email | 清單每筆列出產品名稱、扣款帳號、總手續費與預計扣款總金額，Email 顯示在頁首 |
-| Web Server、Application Server 與關聯式資料庫的三層式架構 | Nginx（設定在 `deploy/nginx.conf`）、Spring Boot、MySQL。後端只監聽本機，對外只開 Nginx |
+| Web Server、Application Server 與關聯式資料庫的三層式架構 | Nginx（設定在 `deploy/nginx.conf`）、Spring Boot、MySQL。對外入口為 Nginx，後端連線設定見[開發與部署](docs/DEVELOPMENT.md) |
 | 後端分為 Presentation、Business、Data、Shared 4 層 | `presentation`、`service`、`repository`、`common` 4 個套件，說明見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 前端使用 Vue.js | Vue 3、TypeScript |
 | 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
@@ -156,6 +156,7 @@ docker compose down -v
 cd backend
 .\mvnw.cmd verify
 cd ..\frontend
+npm ci
 npm run test:unit -- --run
 ```
 
@@ -166,7 +167,7 @@ npm run test:unit -- --run
 ## 已知限制
 
 - 憑證是本機自簽的，HSTS 也只設 300 秒，僅供本機展示。正式環境要換成受信任的憑證，並把 HSTS 改成一年。
-- Nginx 與後端都只監聽 `127.0.0.1`。要開放給其他主機時，換掉憑證與示範密碼後，只改 `deploy/nginx.conf` 的 `listen`。後端維持只監聽本機，否則限流與安全標頭會被繞過。
+- 手動部署時，Nginx 與後端都只監聽 `127.0.0.1`。要開放給其他主機時，換掉憑證與示範密碼後，只改 `deploy/nginx.conf` 的 `listen`。後端維持只監聽本機，否則限流與安全標頭會被繞過。容器版見 [Docker 設定](docs/DEVELOPMENT.md#docker-設定)。
 - 登入限流以來源位址計算，擋不住從多個位址輪流猜同一個使用者 ID 的密碼，也沒有連續失敗就鎖定使用者的機制。
 - 扣款帳號全系統唯一，新增時已被登錄就回 409。登入的使用者因此能試出某個扣款帳號是否已被登錄，但看不出屬於誰。
 - 不提供註冊、忘記密碼與會員資料修改。題目沒有要求，使用者視為由既有系統建立。開放註冊的話，扣款帳號屬於誰沒辦法驗證，「使用者 ID 已被使用」的回應也會洩漏登入端刻意隱藏的資訊。

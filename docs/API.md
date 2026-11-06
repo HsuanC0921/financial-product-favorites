@@ -2,7 +2,7 @@
 
 [專案說明](../README.md) · [架構](ARCHITECTURE.md) · **API** · [安全性](SECURITY.md) · [測試](TESTING.md) · [開發與部署](DEVELOPMENT.md)
 
-除登入外，所有 API 都需要先登入。登入以表單格式送出，其餘請求與回應都是 JSON。
+除登入外，所有 API 都需要先登入。登入以表單格式送出，其餘有本文的請求與回應使用 JSON。204 回應不含本文。
 
 所有 POST、PUT、DELETE，包含登入與登出，都要帶 `X-XSRF-TOKEN` 標頭，值取自 `XSRF-TOKEN` Cookie。還沒有這個 Cookie 時，先送一個 `/api/` 底下的 GET，例如 `GET /api/me`，未登入也會拿到。首頁與靜態檔由 Nginx 直接回應，不會發這個 Cookie。登入成功的回應會清掉這個 Cookie，要再送一次 `/api/` 的 GET 取得新的值，才能繼續送寫入請求。原理見[安全性](SECURITY.md)。
 

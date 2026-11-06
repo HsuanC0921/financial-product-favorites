@@ -9,7 +9,7 @@
            靜態檔案、TLS、反向代理    REST API                           資料表與 Stored Procedure
 ```
 
-瀏覽器只會連到 Nginx。Nginx 負責提供 `frontend/dist` 裡的靜態檔，把 `/api/` 開頭的請求轉給 Spring Boot，並把 HTTP 一律轉到 HTTPS，設定在 [`deploy/nginx.conf`](../deploy/nginx.conf)。Spring Boot 只聽 `127.0.0.1:8080`，從 Nginx 帶來的 `X-Forwarded-Proto` 判斷原本是不是 HTTPS。Nginx 加的安全標頭和登入次數限制，寫在[安全性](SECURITY.md)。
+瀏覽器只會連到 Nginx。Nginx 負責提供 `frontend/dist` 裡的靜態檔，把 `/api/` 開頭的請求轉給 Spring Boot，並把 HTTP 一律轉到 HTTPS，設定在 [`deploy/nginx.conf`](../deploy/nginx.conf)。手動部署時，Spring Boot 只聽 `127.0.0.1:8080`。容器版的後端不發布主機埠，見 [Docker 設定](DEVELOPMENT.md#docker-設定)。後端從 Nginx 帶來的 `X-Forwarded-Proto` 判斷原本是不是 HTTPS。Nginx 加的安全標頭和登入次數限制，寫在[安全性](SECURITY.md)。
 
 後端分成 4 層，每層一個套件，都在 `io.github.hsuanc0921.favorites` 底下：
 
