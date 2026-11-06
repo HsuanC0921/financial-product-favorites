@@ -18,6 +18,7 @@
 
 - 資料庫存取只用 Stored Procedure，應用程式的資料庫帳號只有 EXECUTE：[為什麼不用 JPA](docs/ARCHITECTURE.md#為什麼用-stored-procedure-加-jdbcclient不用-jpa)
 - 清單用 `afterSn` 接續，不用頁碼：[原因](docs/ARCHITECTURE.md#為什麼清單用-aftersn-接續不用頁碼)
+- 防範 XSS 是在顯示時跳脫，不在收到資料時過濾：[原因](docs/SECURITY.md)
 - 兩人同時修改以版本號偵測，後送出的人會收到衝突提示：見 [docs/SECURITY.md](docs/SECURITY.md) 的「並行修改」
 
 ## 題目規格對照
@@ -26,6 +27,7 @@
 | --- | --- |
 | 新增、查詢、刪除、修改喜好 | 介面在 `FavoritesView`，後端由 `FavoriteController` 提供 API，規格見 [docs/API.md](docs/API.md) |
 | 查詢顯示產品名稱清單、扣款帳號、總金額、總手續費、使用者 Email | 清單每筆列出產品名稱、扣款帳號、總手續費與預計扣款總金額，Email 顯示在頁首 |
+| Web Server、Application Server 與關聯式資料庫的三層式架構 | Nginx（設定在 `deploy/nginx.conf`）、Spring Boot、MySQL。後端只監聽本機，對外只開 Nginx |
 | 後端分為 Presentation、Business、Data、Shared 4 層 | `presentation`、`service`、`repository`、`common` 4 個套件，說明見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 前端使用 Vue.js | Vue 3、TypeScript |
 | 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
@@ -33,6 +35,7 @@
 | 資料庫存取一律透過 Stored Procedure | 9 支 Stored Procedure，位於 `DB/procedures/`。後端只執行 `CALL`，應用程式的資料庫帳號也只有 EXECUTE 權限 |
 | DDL 與 DML 放在專案的 `DB` 資料夾 | `DB/ddl/` 與 `DB/dml/`，另有 `DB/procedures/` |
 | 防範 SQL Injection | 參數一律以 `?` 綁定，不拼接 SQL 字串，見 [docs/SECURITY.md](docs/SECURITY.md) |
+| 防範 XSS | 前端只用 Vue 的文字插值、不用 `v-html`，Nginx 再加上 Content-Security-Policy，見 [docs/SECURITY.md](docs/SECURITY.md) |
 | 資料表至少包含 User、Product、Like List | `app_user`、`product`、`like_list`，另加 `user_account` 保存使用者可用的扣款帳號，欄位見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#資料模型) |
 
 ## 文件
@@ -43,6 +46,7 @@
 | [資料庫設計](docs/ARCHITECTURE.md#資料模型) | 四張資料表的 ER 圖與欄位限制，GitHub 上直接顯示圖 |
 | [docs/API.md](docs/API.md) | API 清單與狀態碼 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 已處理的安全威脅與做法、相依套件修補 |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 不經 Nginx 的開發模式 |
 | [DB/README.md](DB/README.md) | 資料庫腳本的執行順序與重置方式 |
 
 ## 技術
@@ -51,6 +55,7 @@
 | --- | --- |
 | 後端 | Java 21、Spring Boot 4.1.2（Spring Framework 7.0、Spring Security 7.1）、Spring JDBC（`JdbcClient`）、MySQL Connector/J 9.7、Bean Validation（Hibernate Validator 9.1） |
 | 資料庫 | MySQL 8.4，Stored Procedure 存取資料 |
+| Web Server | Nginx 1.31 |
 | 前端 | Vue 3.5、TypeScript 6.0、Vite 8、big.js 7（金額預估用十進位小數計算） |
 | 建置 | Maven 3.10（Maven Wrapper）、npm 10（Node.js 22） |
 | 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc，前端用 Vitest 5.0 |
@@ -63,16 +68,21 @@ financial-product-favorites/
 ├─ backend/    Spring Boot REST API
 ├─ frontend/   Vue 前端
 ├─ DB/         資料庫腳本，分成 ddl、procedures、dml 3 個資料夾
+├─ deploy/     Nginx 設定
 └─ docs/       架構、API 與安全性說明
 ```
 
 ## 快速開始
+
+以下步驟以 Nginx、Spring Boot、MySQL 三層啟動，指令都在專案根目錄執行。
 
 ### 環境需求
 
 - JDK 21，並設定好 `JAVA_HOME`
 - Node.js 22.18 以上的 22.x，或 24.12 以上
 - MySQL 8.4，以及 `mysql` 命令列用戶端
+- Nginx 1.25.1 以上
+- OpenSSL，Git for Windows 已內附
 
 Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
 
@@ -80,29 +90,47 @@ Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
 
 依 [DB/README.md](DB/README.md) 的順序，以管理員帳號執行 5 支腳本。腳本會建立資料庫、資料表、2 個資料庫帳號、Stored Procedure 與示範資料。
 
-### 2. 建置並啟動後端
+### 2. 建置
 
 後端建置時會跑測試，測試連的是步驟 1 建好的資料庫。
 
 ```powershell
 cd backend
 .\mvnw.cmd package
-java -jar target\financial-product-favorites-0.0.1-SNAPSHOT.jar
+cd ..\frontend
+npm ci
+npm run build
+cd ..
 ```
 
-後端監聽 `http://127.0.0.1:8080`，API 規格見 [docs/API.md](docs/API.md)。
+### 3. 產生本機憑證
 
-### 3. 建置並啟動前端
-
-另開終端機，開發模式由 Vite 提供前端，並把 `/api` 轉給後端：
+`deploy/certs/` 不納入版本控制，每台機器各自產生：
 
 ```powershell
-cd frontend
-npm ci
-npm run dev
+New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
+& 'C:\Program Files\Git\usr\bin\openssl.exe' req -x509 -newkey rsa:2048 -nodes -days 365 -keyout deploy/certs/key.pem -out deploy/certs/cert.pem -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
 ```
 
-開啟 `http://localhost:5173`，帳號密碼見[示範使用者](#示範使用者)。
+### 4. 啟動
+
+各開一個終端機，分別啟動後端與 Nginx：
+
+```powershell
+java -jar backend\target\financial-product-favorites-0.0.1-SNAPSHOT.jar
+```
+
+```powershell
+nginx -p deploy -c nginx.conf
+```
+
+開啟 `https://localhost`。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。`http://localhost` 會自動轉到 HTTPS。
+
+停止 Nginx：
+
+```powershell
+nginx -p deploy -c nginx.conf -s stop
+```
 
 ### 設定
 

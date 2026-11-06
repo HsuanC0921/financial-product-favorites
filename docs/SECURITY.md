@@ -5,7 +5,12 @@
 | 威脅 | 處理方式 |
 | --- | --- |
 | SQL Injection | 資料庫存取一律是參數化的 `CALL sp_xxx(?, ?)`，沒有拼接 SQL 字串。應用程式用的資料庫帳號只有 EXECUTE 權限，不能直接讀寫資料表。測試裡含 SQL 語法的使用者 ID，會被當成一般文字。 |
+| XSS | 前端只用 Vue 的文字插值，整個專案沒有用 `v-html`，使用者輸入的內容不會被當成 HTML 執行。Nginx 另外加了 Content-Security-Policy，只允許載入同源的腳本與樣式，就算有內容被塞進頁面，行內腳本也跑不起來。後端刻意不在收到資料時跳脫 HTML，因為跳脫只對 HTML 有意義，太早做會改掉使用者的資料，例如 `A&B` 會被改成跳脫後的樣子，換到匯出檔之類不是 HTML 的地方，就會原樣顯示出跳脫碼。所以資料照原樣存，顯示時才跳脫。測試有確認含 `<script>` 的名稱與備註會原樣存回。 |
 | CSRF | 用「Cookie 加標頭」的做法：伺服器發一個 `XSRF-TOKEN` Cookie，前端把同樣的值放進 `X-XSRF-TOKEN` 標頭，兩者對不上就回 403。 |
+| 傳輸竊聽 | 只透過 HTTPS（TLS 1.2 與 1.3）提供服務，HTTP 一律轉到 HTTPS，並送出 HSTS。經由 HTTPS 時，Session 和 `XSRF-TOKEN` Cookie 都會帶 `Secure`。 |
+| 暴力猜密碼 | Nginx 限制同一個來源位址每分鐘登入 10 次，另外容許 5 次突發，超過回 429。 |
+| 點擊劫持與內容嗅探 | 回應帶 `X-Frame-Options: DENY` 和 CSP 的 `frame-ancestors 'none'`，頁面不能被嵌進別人的框架。`X-Content-Type-Options: nosniff` 不讓瀏覽器自己猜檔案類型。另外還設了 `Referrer-Policy: no-referrer` 與 `Permissions-Policy`。 |
+| 繞過 Web Server | 後端只聽 `127.0.0.1`，其他主機只能經過 Nginx，限流和安全標頭就繞不過去。`X-Forwarded-*` 標頭也只有本機的 Nginx 送得進來。 |
 | 密碼保存 | 密碼用 BCrypt（強度 12）存雜湊，不存明文。 |
 | 使用者 ID 列舉 | 密碼錯誤和使用者 ID 不存在，回應一模一樣。使用者 ID 不存在時，Spring 會用同強度的假雜湊比對，所以兩種情況花的時間也差不多。 |
 | Session | Session Cookie 設成 HttpOnly 與 SameSite=Lax，閒置 30 分鐘就過期，登入時換發新的 Session，降低 Session Fixation 的風險。沒登入的請求不會建立 Session。 |

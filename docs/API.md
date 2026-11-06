@@ -2,7 +2,7 @@
 
 除登入外，所有 API 都需要先登入。登入以表單格式送出，其餘請求與回應都是 JSON。
 
-所有 POST、PUT、DELETE，包含登入與登出，都要帶 `X-XSRF-TOKEN` 標頭，值取自 `XSRF-TOKEN` Cookie。還沒有這個 Cookie 時，先送一個 `/api/` 底下的 GET，例如 `GET /api/me`，未登入也會拿到。登入成功的回應會清掉這個 Cookie，要再送一次 `/api/` 的 GET 取得新的值，才能繼續送寫入請求。
+所有 POST、PUT、DELETE，包含登入與登出，都要帶 `X-XSRF-TOKEN` 標頭，值取自 `XSRF-TOKEN` Cookie。還沒有這個 Cookie 時，先送一個 `/api/` 底下的 GET，例如 `GET /api/me`，未登入也會拿到。首頁與靜態檔由 Nginx 直接回應，不會發這個 Cookie。登入成功的回應會清掉這個 Cookie，要再送一次 `/api/` 的 GET 取得新的值，才能繼續送寫入請求。原理見[安全性](SECURITY.md)。
 
 ## 端點
 
@@ -103,6 +103,7 @@ Content-Type: application/json
 | 412 | `VERSION_CONFLICT` | 資料在讀取後已被修改，`If-Match` 的版本過期 |
 | 422 | `UNKNOWN_ACCOUNT` | 扣款帳號不屬於此使用者 |
 | 428 | `PRECONDITION_REQUIRED` | 修改或刪除時缺少 `If-Match` |
+| 429 | `TOO_MANY_REQUESTS` | 登入嘗試過於頻繁，由 Nginx 回應 |
 | 500 | `INTERNAL_ERROR` | 未預期的錯誤，細節只寫進伺服器記錄 |
 
 Spring MVC 內建的其他錯誤，例如 405 不支援的方法、415 的 `Content-Type` 不是 `application/json`，也用相同的格式回應。
