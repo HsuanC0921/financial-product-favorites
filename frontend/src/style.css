@@ -133,6 +133,11 @@ button.link {
 }
 
 /* 訊息 */
+small,
+.subtitle {
+  font-size: 0.875rem;
+}
+
 .error {
   color: var(--danger);
 }

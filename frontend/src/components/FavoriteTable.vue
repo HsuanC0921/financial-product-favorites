@@ -70,6 +70,7 @@ function formatTime(iso: string): string {
 
 table {
   width: 100%;
+  font-variant-numeric: tabular-nums;
   border-collapse: collapse;
 }
 
@@ -90,13 +91,13 @@ tbody tr:hover {
 }
 
 th {
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted);
   background: var(--bg);
 }
 
 .num {
-  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
@@ -140,10 +141,11 @@ small {
   tr {
     display: grid;
     grid-template-areas:
-      'product total'
+      'product product'
+      'total total'
       'qty fee'
       'account actions';
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem 1rem;
     align-items: start;
     padding: 0.875rem 1rem;
@@ -159,7 +161,9 @@ small {
   }
 
   td {
+    min-width: 0;
     padding: 0;
+    overflow-wrap: anywhere;
     white-space: normal;
     border: 0;
   }
@@ -167,7 +171,7 @@ small {
   /* 標籤改成數值上方的小字，不佔一整列 */
   td::before {
     display: block;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--muted);
     content: attr(data-label);
   }
@@ -181,7 +185,12 @@ small {
   }
 
   .total {
+    display: flex;
+    flex-wrap: wrap;
     grid-area: total;
+    gap: 0.25rem 1rem;
+    align-items: baseline;
+    justify-content: space-between;
     font-size: 1.125rem;
   }
 

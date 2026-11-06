@@ -69,7 +69,7 @@ onMounted(loadMe)
     </div>
   </header>
 
-  <main>
+  <main :class="{ guest: ready && !me }">
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="!ready" role="status">載入中…</p>
     <FavoritesView v-else-if="me" :me="me" :refresh-me="refreshMe" />
@@ -88,7 +88,7 @@ onMounted(loadMe)
   gap: 0.5rem 1rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem max(1rem, calc((100% - 1200px) / 2 + 1rem));
   background: var(--surface);
   border-bottom: 3px solid var(--accent-bright);
   box-shadow: var(--shadow);
@@ -115,10 +115,6 @@ h1 {
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.35;
-}
-
-.who small {
-  font-size: 0.8125rem;
 }
 
 /* 窄螢幕：標題與登出同一列，姓名與 Email 獨立一行放在下面 */
@@ -156,6 +152,18 @@ h1 {
 main {
   max-width: 1200px;
   padding: 1.5rem 1rem;
+  margin: 0 auto;
+}
+
+/* 登入頁整片鋪上淡淡的等高線圖樣，圖樣來源見 README 的第三方素材 */
+main.guest {
+  max-width: none;
+  min-height: calc(100vh - 3.75rem);
+  background: url('/topography.svg') center / 600px;
+}
+
+main.guest .notice {
+  max-width: 22rem;
   margin: 0 auto;
 }
 </style>

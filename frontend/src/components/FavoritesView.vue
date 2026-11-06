@@ -155,7 +155,10 @@ onMounted(reload)
     <p v-if="status === 'failed'">
       <button @click="reload">重新載入</button>
     </p>
-    <p v-else-if="items.length === 0" class="empty">還沒有任何喜好紀錄，按「新增喜好」開始吧</p>
+    <div v-else-if="items.length === 0" class="empty">
+      <img src="/empty-list.svg" alt="" width="56" height="56" />
+      <p>還沒有任何喜好紀錄，按「新增喜好」開始吧</p>
+    </div>
     <p v-else-if="visibleItems.length === 0" class="empty">沒有符合的產品</p>
 
     <FavoriteTable
@@ -197,7 +200,7 @@ onMounted(reload)
 .page-header {
   display: flex;
   gap: 1rem;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
 }
@@ -206,7 +209,7 @@ h2 {
   margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .toolbar {
@@ -221,6 +224,15 @@ h2 {
   padding: 2rem 0;
   color: var(--muted);
   text-align: center;
+}
+
+.empty img {
+  display: block;
+  margin: 0 auto 0.5rem;
+}
+
+.empty p {
+  margin: 0;
 }
 
 .more {

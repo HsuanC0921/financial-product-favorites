@@ -53,7 +53,6 @@ async function submit() {
   margin: 4rem auto;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--accent-bright);
   border-radius: 8px;
   box-shadow: var(--shadow);
 }
