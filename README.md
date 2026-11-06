@@ -7,8 +7,8 @@
 ## 功能
 
 - 登入與登出，每位使用者只看得到自己的資料。
-- 查詢喜好清單：產品名稱、扣款帳號、總手續費、總金額，並回傳使用者的 Email。清單超過 100 筆時用 `afterSn` 接續。
-- 新增、修改、刪除喜好。
+- 查詢喜好清單：產品名稱、扣款帳號、總手續費、總金額，並顯示使用者的 Email。清單超過 100 筆時用「載入更多」接續。
+- 新增、修改、刪除喜好。表單即時預估手續費與總金額。
 - 新增自己的扣款帳號。
 - 兩個人同時修改同一筆資料時，後送出的人會收到衝突提示，而不是悄悄覆蓋。
 
@@ -24,7 +24,10 @@
 
 | 題目要求 | 實作與位置 |
 | --- | --- |
+| 新增、查詢、刪除、修改喜好 | 介面在 `FavoritesView`，後端由 `FavoriteController` 提供 API，規格見 [docs/API.md](docs/API.md) |
+| 查詢顯示產品名稱清單、扣款帳號、總金額、總手續費、使用者 Email | 清單每筆列出產品名稱、扣款帳號、總手續費與預計扣款總金額，Email 顯示在頁首 |
 | 後端分為 Presentation、Business、Data、Shared 4 層 | `presentation`、`service`、`repository`、`common` 4 個套件，說明見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| 前端使用 Vue.js | Vue 3、TypeScript |
 | 後端使用 Spring Boot，API 採 RESTful | Spring Boot 4.1.2，以 `/api/favorites/{sn}` 這類資源路徑搭配 GET、POST、PUT、DELETE，結果以狀態碼表示 |
 | 以 Maven 或 Gradle 建置 | Maven，使用專案內的 Maven Wrapper |
 | 資料庫存取一律透過 Stored Procedure | 9 支 Stored Procedure，位於 `DB/procedures/`。後端只執行 `CALL`，應用程式的資料庫帳號也只有 EXECUTE 權限 |
@@ -48,10 +51,10 @@
 | --- | --- |
 | 後端 | Java 21、Spring Boot 4.1.2（Spring Framework 7.0、Spring Security 7.1）、Spring JDBC（`JdbcClient`）、MySQL Connector/J 9.7、Bean Validation（Hibernate Validator 9.1） |
 | 資料庫 | MySQL 8.4，Stored Procedure 存取資料 |
-| 前端 | Vue 3.5、TypeScript 6.0、Vite 8 |
+| 前端 | Vue 3.5、TypeScript 6.0、Vite 8、big.js 7（金額預估用十進位小數計算） |
 | 建置 | Maven 3.10（Maven Wrapper）、npm 10（Node.js 22） |
-| 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc |
-| 程式碼檢查 | 後端：Prettier 3.9 搭配 prettier-plugin-java 2.11 |
+| 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc，前端用 Vitest 5.0 |
+| 程式碼檢查 | 前端：ESLint 10、Oxlint 1.82、Stylelint 17、Prettier 3.9、vue-tsc 3.3，後端：Prettier 3.9 搭配 prettier-plugin-java 2.11 |
 
 ## 專案結構
 
@@ -68,6 +71,7 @@ financial-product-favorites/
 ### 環境需求
 
 - JDK 21，並設定好 `JAVA_HOME`
+- Node.js 22.18 以上的 22.x，或 24.12 以上
 - MySQL 8.4，以及 `mysql` 命令列用戶端
 
 Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
@@ -87,6 +91,18 @@ java -jar target\financial-product-favorites-0.0.1-SNAPSHOT.jar
 ```
 
 後端監聽 `http://127.0.0.1:8080`，API 規格見 [docs/API.md](docs/API.md)。
+
+### 3. 建置並啟動前端
+
+另開終端機，開發模式由 Vite 提供前端，並把 `/api` 轉給後端：
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+開啟 `http://localhost:5173`，帳號密碼見[示範使用者](#示範使用者)。
 
 ### 設定
 
@@ -121,6 +137,10 @@ cd backend
 ```
 
 後端的整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。
+
+## 第三方素材
+
+頁面圖示使用 [Tabler Icons](https://github.com/tabler/tabler-icons) 的 `mountain`，採 MIT 授權，授權聲明保留在 `frontend/public/favicon.svg` 內。
 
 ## 授權聲明
 
