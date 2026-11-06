@@ -92,7 +92,8 @@
 | Web Server | Nginx 1.31（Docker 版用 `nginx:1.31-alpine` 映像） |
 | 前端 | Vue 3.5、TypeScript 6.0、Vite 8、big.js 7（金額預估用十進位小數計算） |
 | 建置 | Maven 3.10（Maven Wrapper）、npm 10（Node.js 22） |
-| 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc，前端用 Vitest 5.0 |
+| 部署 | Docker 多階段建置、Docker Compose 啟動三層服務 |
+| 測試 | 後端用 JUnit 6.0、Mockito 5.23、MockMvc，前端用 Vitest 5.0，壓力測試用 [k6](docs/TESTING.md#壓力測試) |
 | 程式碼檢查 | 前端：ESLint 10、Oxlint 1.82、Stylelint 17、Prettier 3.9、vue-tsc 3.3，後端：Prettier 3.9 搭配 prettier-plugin-java 2.11 |
 
 ## 專案結構
