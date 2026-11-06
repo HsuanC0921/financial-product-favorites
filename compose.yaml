@@ -3,7 +3,9 @@
 
 services:
   db:
-    image: mysql:8.4
+    build:
+      context: .
+      dockerfile: deploy/docker/db.Dockerfile
     environment:
       # 不需要以 root 登入，密碼隨機產生
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
@@ -29,6 +31,7 @@ services:
       dockerfile: deploy/docker/backend.Dockerfile
     environment:
       FAVORITES_DB_URL: jdbc:mysql://db:3306/favorites
+      FAVORITES_DB_PASSWORD: ${FAVORITES_DB_PASSWORD:-Favorites-App-2026}
       # 容器內要讓 Nginx 連得到，主機上不開這個埠
       FAVORITES_BIND_ADDRESS: 0.0.0.0
     depends_on:
@@ -43,7 +46,8 @@ services:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   db-data:

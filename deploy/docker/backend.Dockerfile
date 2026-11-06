@@ -5,8 +5,13 @@ COPY backend/ .
 RUN --mount=type=cache,target=/root/.m2 sh mvnw -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
-RUN useradd --system app
+# 套用基底映像尚未包含的系統安全更新
+RUN apt-get update && apt-get upgrade -y \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system app
 COPY --from=build /src/target/financial-product-favorites-0.0.1-SNAPSHOT.jar /app/app.jar
 USER app
 EXPOSE 8080
+# 未登入時應回 401，代表 API 已可接受請求
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s CMD curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/me | grep -qx 401
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
