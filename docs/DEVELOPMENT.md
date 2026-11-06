@@ -47,7 +47,7 @@ New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
 各開一個終端機，分別啟動後端與 Nginx：
 
 ```powershell
-java -jar backend\target\financial-product-favorites-0.0.1-SNAPSHOT.jar
+java -jar backend\target\financial-product-favorites-1.0.0.jar
 ```
 
 ```powershell
@@ -77,7 +77,7 @@ nginx -p deploy -c nginx.conf -s stop
 
 容器版沿用同一份 `deploy/nginx.conf` 與 `DB/` 的腳本，主要差別如下：
 
-- Nginx 的自簽憑證在建置映像檔時產生，不需要手動執行[產生本機憑證](#3-產生本機憑證)的步驟。
+- Nginx 的自簽憑證由各容器首次啟動時產生，重啟沿用，不放進映像檔。不需要手動執行[產生本機憑證](#3-產生本機憑證)的步驟。
 - 建置後端時不跑測試，因為那時資料庫還沒有起來。
 - 後端與資料庫在不同的容器，所以多建一個連線來源為 `%` 的 `favorites_app`，權限同樣只有 EXECUTE，見 `DB/ddl/docker_app_user.sql`。
 

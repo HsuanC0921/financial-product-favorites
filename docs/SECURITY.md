@@ -44,7 +44,7 @@ Trivy 的項目以套件與弱點編號的組合計算，同一個弱點影響�
 
 另以獨立資料庫完成登入後的 ZAP 主動掃描，共記錄 4,667 筆 HTTP 訊息，沒有高、中風險警告。JSON 原樣回傳 HTML 被列為低風險，已在實際瀏覽器確認名稱與備註以純文字顯示。掃描紀錄中的畸形查詢 `/api/favorites?=` 原本回 500，已修正為 400，並在既有真實 HTTP 測試補上斷言。登入後的 Cookie 屬性仍由 `CookieAndSessionTests` 檢查。
 
-映像修補包含系統套件更新，以及移除未使用的 MySQL Shell 與 gosu。三個服務均以非 root 帳號執行。Trivy 仍會將本機自簽 TLS 私鑰列為提示，該金鑰只在映像內，不納入版本控制。系統更新有建置快取，需要重新取得修補時使用 `docker compose build --pull --no-cache` 再啟動。
+映像修補包含系統套件更新，以及移除未使用的 MySQL Shell 與 gosu。三個服務均以非 root 帳號執行。自簽 TLS 私鑰由各容器首次啟動時產生，不放進映像檔或版本控制。系統更新有建置快取，需要重新取得修補時使用 `docker compose build --pull --no-cache` 再啟動。
 
 ## 相依套件修補
 

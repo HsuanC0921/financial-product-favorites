@@ -9,7 +9,7 @@ FROM eclipse-temurin:21-jre
 RUN apt-get update && apt-get upgrade -y \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system app
-COPY --from=build /src/target/financial-product-favorites-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY --from=build /src/target/financial-product-favorites-1.0.0.jar /app/app.jar
 USER app
 EXPOSE 8080
 # 未登入時應回 401，代表 API 已可接受請求
