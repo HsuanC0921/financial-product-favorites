@@ -1,5 +1,7 @@
 # 安全性
 
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · **安全性** · [測試](TESTING.md) · [開發模式](DEVELOPMENT.md)
+
 下表列出已處理的威脅和做法。本機部署才有的限制，見[已知限制](../README.md#已知限制)。
 
 | 威脅 | 處理方式 |

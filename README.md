@@ -24,6 +24,8 @@
 
 ## 題目規格對照
 
+題目的每項要求都已完成。
+
 | 題目要求 | 實作與位置 |
 | --- | --- |
 | 新增、查詢、刪除、修改喜好 | 介面在 `FavoritesView`，後端由 `FavoriteController` 提供 API，規格見 [docs/API.md](docs/API.md) |

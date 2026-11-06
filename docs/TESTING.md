@@ -1,5 +1,7 @@
 # 測試
 
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · [安全性](SECURITY.md) · **測試** · [開發模式](DEVELOPMENT.md)
+
 後端的整合測試連真實的 MySQL。Stored Procedure 沒辦法用記憶體資料庫模擬，所以執行前要先照 [DB/README.md](../DB/README.md) 建好資料庫與示範資料。寫入測試只用 seed 裡沒有喜好紀錄的使用者 C，建立的紀錄由測試自己刪掉。
 
 ## 執行

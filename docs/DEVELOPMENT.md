@@ -1,5 +1,7 @@
 # 開發模式
 
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · [安全性](SECURITY.md) · [測試](TESTING.md) · **開發模式**
+
 開發時不經過 Nginx，前端由 Vite 開發伺服器提供，前端程式碼存檔後畫面立即更新。這個模式走 HTTP，沒有 TLS 與 Nginx 加的安全標頭，只用於開發。
 
 資料庫的建立方式與[快速開始](../README.md#1-建立資料庫)相同。如果以 Nginx 部署的後端還在執行，先停掉它，兩者都使用 8080。
