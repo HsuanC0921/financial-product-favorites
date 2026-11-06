@@ -183,11 +183,11 @@ onMounted(reload)
     @close="formOpen = false"
   />
 
-  <ModalDialog v-if="deleting" title="刪除喜好" @close="deleting = null">
+  <ModalDialog v-if="deleting" title="刪除喜好" :busy="deleteBusy" @close="deleting = null">
     <p>確定要刪除「{{ deleting.productName }}」嗎？刪除後無法復原。</p>
     <p v-if="deleteError" class="error" role="alert">{{ deleteError }}</p>
     <div class="dialog-actions">
-      <button @click="deleting = null">取消</button>
+      <button :disabled="deleteBusy" @click="deleting = null">取消</button>
       <button class="danger" :disabled="deleteBusy" @click="confirmDelete">確定刪除</button>
     </div>
   </ModalDialog>

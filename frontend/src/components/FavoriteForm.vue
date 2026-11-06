@@ -9,7 +9,7 @@ import {
   updateFavorite,
 } from '../api'
 import { estimate, isPercent, isPrice, isQuantity, shiftDecimal, withCommas } from '../amount'
-import type { Favorite, FavoriteInput, Me } from '../types'
+import type { Account, Favorite, FavoriteInput, Me } from '../types'
 import ModalDialog from './ModalDialog.vue'
 import TextField from './TextField.vue'
 
@@ -44,7 +44,7 @@ const latestSummary = ref('')
 
 const errors = computed(() => ({
   productName: productName.value.trim() ? '' : '請輸入產品名稱',
-  price: isPrice(price.value) ? '' : '請輸入大於 0 的價格，最多兩位小數',
+  price: isPrice(price.value) ? '' : '單價須介於 0.01 到 9,999,999,999.99，最多兩位小數',
   percent: isPercent(percent.value) ? '' : '請輸入 0 到 100 的費率，最多六位小數',
   quantity: isQuantity(quantity.value) ? '' : '請輸入 1 到 1,000,000 的整數',
 }))
@@ -85,6 +85,7 @@ async function submit() {
       return
     }
     conflict.value = e instanceof ApiError && e.status === 412
+    if (conflict.value) latestSummary.value = ''
     error.value = errorMessage(e)
   } finally {
     busy.value = false
@@ -94,17 +95,21 @@ async function submit() {
 // 版本衝突時只更新版本號，使用者已經輸入的內容原封不動
 async function reloadVersion() {
   if (!props.favorite) return
+  busy.value = true
   try {
     const latest = await getFavorite(props.favorite.sn)
     version.value = latest.version
     latestSummary.value =
       `目前資料庫裡是：${latest.productName}，價格 ${latest.price}，` +
-      `費率 ${shiftDecimal(latest.feeRate, 2)}%，數量 ${latest.purchaseQuantity}`
+      `費率 ${shiftDecimal(latest.feeRate, 2)}%，數量 ${latest.purchaseQuantity}，` +
+      `扣款帳號 ${latest.account}，備註 ${latest.note || '未填寫'}`
     conflict.value = false
     error.value = ''
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) emit('saved')
     else error.value = errorMessage(e)
+  } finally {
+    busy.value = false
   }
 }
 
@@ -112,32 +117,46 @@ const addingAccount = ref(false)
 const newAccount = ref('')
 const newAccountName = ref('')
 const accountError = ref('')
+const accountBusy = ref(false)
+const createdAccount = ref<Account | null>(null)
 
 async function submitAccount() {
   accountError.value = ''
-  if (!/^\d{1,32}$/.test(newAccount.value)) {
+  if (!createdAccount.value && !/^\d{1,32}$/.test(newAccount.value)) {
     accountError.value = '帳號只能是 1 到 32 位數字'
     return
   }
-  if (!newAccountName.value.trim()) {
+  if (!createdAccount.value && !newAccountName.value.trim()) {
     accountError.value = '請輸入帳號暱稱'
     return
   }
+  accountBusy.value = true
   try {
-    const created = await addAccount(newAccount.value, newAccountName.value.trim())
+    if (!createdAccount.value) {
+      createdAccount.value = await addAccount(newAccount.value, newAccountName.value.trim())
+    }
     await props.refreshMe()
-    account.value = created.account
+    account.value = createdAccount.value.account
     addingAccount.value = false
+    createdAccount.value = null
     newAccount.value = ''
     newAccountName.value = ''
   } catch (e) {
-    accountError.value = errorMessage(e)
+    accountError.value = createdAccount.value
+      ? `帳號已建立，但帳號清單尚未更新。${errorMessage(e)}`
+      : errorMessage(e)
+  } finally {
+    accountBusy.value = false
   }
 }
 </script>
 
 <template>
-  <ModalDialog :title="editing ? '編輯喜好' : '新增喜好'" @close="emit('close')">
+  <ModalDialog
+    :title="editing ? '編輯喜好' : '新增喜好'"
+    :busy="busy || accountBusy"
+    @close="emit('close')"
+  >
     <form class="favorite-form" novalidate @submit.prevent="submit">
       <TextField
         v-model="productName"
@@ -145,13 +164,21 @@ async function submitAccount() {
         label="產品名稱"
         :maxlength="100"
         :error="shown?.productName"
+        :disabled="busy || accountBusy"
       />
-      <TextField v-model="price" label="價格" inputmode="decimal" :error="shown?.price" />
+      <TextField
+        v-model="price"
+        label="價格"
+        inputmode="decimal"
+        :error="shown?.price"
+        :disabled="busy || accountBusy"
+      />
       <TextField
         v-model="percent"
         label="手續費率（%）"
         inputmode="decimal"
         :error="shown?.percent"
+        :disabled="busy || accountBusy"
       />
       <TextField
         v-model="quantity"
@@ -159,36 +186,64 @@ async function submitAccount() {
         label="購買數量"
         inputmode="numeric"
         :error="shown?.quantity"
+        :disabled="busy || accountBusy"
       />
 
       <div class="field wide-narrow">
         <div class="field-head">
           <label :for="accountId">扣款帳號</label>
-          <button v-if="!addingAccount" type="button" class="link" @click="addingAccount = true">
+          <button
+            v-if="!addingAccount"
+            type="button"
+            class="link"
+            :disabled="busy || accountBusy"
+            @click="addingAccount = true"
+          >
             新增帳號
           </button>
         </div>
-        <select :id="accountId" v-model="account">
+        <select :id="accountId" v-model="account" :disabled="busy || accountBusy">
           <option v-for="a in me.accounts" :key="a.account" :value="a.account">
             {{ a.account }}（{{ a.accountName }}）
           </option>
         </select>
       </div>
 
-      <fieldset v-if="addingAccount" class="new-account">
+      <fieldset v-if="addingAccount" class="new-account" :disabled="busy || accountBusy">
         <legend>新增扣款帳號</legend>
-        <TextField v-model="newAccount" label="帳號" inputmode="numeric" :maxlength="32" />
-        <TextField v-model="newAccountName" label="暱稱" :maxlength="50" />
+        <TextField
+          v-model="newAccount"
+          label="帳號"
+          inputmode="numeric"
+          :maxlength="32"
+          :disabled="createdAccount !== null"
+        />
+        <TextField
+          v-model="newAccountName"
+          label="暱稱"
+          :maxlength="50"
+          :disabled="createdAccount !== null"
+        />
         <p v-if="accountError" class="error" role="alert">{{ accountError }}</p>
         <div class="dialog-actions">
-          <button type="button" @click="addingAccount = false">取消</button>
-          <button type="button" class="primary" @click="submitAccount">加入</button>
+          <button type="button" @click="addingAccount = false">
+            {{ createdAccount ? '關閉' : '取消' }}
+          </button>
+          <button type="button" class="primary" @click="submitAccount">
+            {{ accountBusy ? '處理中…' : createdAccount ? '重新載入帳號' : '加入帳號' }}
+          </button>
         </div>
       </fieldset>
 
       <div class="field wide">
         <label :for="noteId">備註（選填）</label>
-        <textarea :id="noteId" v-model="note" maxlength="200" rows="2" />
+        <textarea
+          :id="noteId"
+          v-model="note"
+          maxlength="200"
+          rows="2"
+          :disabled="busy || accountBusy"
+        />
       </div>
 
       <p v-if="preview" class="preview" aria-live="polite">
@@ -198,7 +253,7 @@ async function submitAccount() {
 
       <p v-if="error" class="error" role="alert">
         {{ error }}
-        <button v-if="conflict" type="button" class="link" @click="reloadVersion">
+        <button v-if="conflict" type="button" class="link" :disabled="busy" @click="reloadVersion">
           取得最新版本
         </button>
       </p>
@@ -207,8 +262,10 @@ async function submitAccount() {
       </p>
 
       <div class="dialog-actions">
-        <button type="button" @click="emit('close')">取消</button>
-        <button class="primary" :disabled="busy">{{ busy ? '儲存中…' : '儲存' }}</button>
+        <button type="button" :disabled="busy || accountBusy" @click="emit('close')">取消</button>
+        <button class="primary" :disabled="busy || accountBusy || addingAccount">
+          {{ busy ? '儲存中…' : '儲存' }}
+        </button>
       </div>
     </form>
   </ModalDialog>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, useId, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, useId, useTemplateRef } from 'vue'
 
-defineProps<{ title: string }>()
+defineProps<{ title: string; busy?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const dialog = useTemplateRef('dialog')
@@ -9,10 +9,17 @@ const titleId = useId()
 
 // 用原生 dialog：自帶焦點管理、Esc 關閉與背景遮罩
 onMounted(() => dialog.value?.showModal())
+onBeforeUnmount(() => dialog.value?.close())
 </script>
 
 <template>
-  <dialog ref="dialog" :aria-labelledby="titleId" @close="emit('close')">
+  <dialog
+    ref="dialog"
+    :aria-labelledby="titleId"
+    :aria-busy="busy || undefined"
+    @cancel="busy && $event.preventDefault()"
+    @close="emit('close')"
+  >
     <h2 :id="titleId">{{ title }}</h2>
     <slot />
   </dialog>

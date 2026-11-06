@@ -9,6 +9,7 @@ defineProps<{
   autocomplete?: string
   maxlength?: number
   required?: boolean
+  disabled?: boolean
 }>()
 
 const model = defineModel<string>({ required: true })
@@ -26,6 +27,7 @@ const id = useId()
       :autocomplete="autocomplete"
       :maxlength="maxlength"
       :required="required"
+      :disabled="disabled"
       :aria-invalid="error ? true : undefined"
       :aria-describedby="error ? `${id}-error` : undefined"
     />
