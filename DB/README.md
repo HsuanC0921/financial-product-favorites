@@ -12,6 +12,7 @@ MySQL 8.4。所有腳本以管理員帳號（root）依下列順序執行。
 | 4 | `procedures/sp_favorite.sql` | 喜好清單的 Stored Procedure |
 | 5 | `dml/seed.sql` | 虛構的示範資料，登入帳密寫在檔案開頭的註解 |
 | 選用 | `dml/pagination_sample.sql` | 一位有 120 筆喜好的使用者，用來操作「載入更多」，登入帳密寫在檔案開頭的註解 |
+| 選用 | `ddl/docker_app_user.sql` | 只給 Docker Compose 使用。後端在另一個容器，連線來源不是 localhost，所以多建一個 `favorites_app@'%'`，權限同樣只有 EXECUTE |
 
 第 2 步必須在建立 Stored Procedure 之前執行，因為 definer 帳號要先存在。資料夾依字母排序是 `ddl`、`dml`、`procedures`，不是執行順序，請照上表。
 

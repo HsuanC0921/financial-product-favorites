@@ -1,0 +1,49 @@
+# 以容器啟動三層：MySQL、Spring Boot、Nginx，對外只開 Nginx 的 80 與 443
+# 啟動：docker compose up --build，步驟見 README
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      # 不需要以 root 登入，密碼隨機產生
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      # 初始化腳本依檔名排序執行，順序同 DB/README.md
+      - ./DB/ddl/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./DB/ddl/02_accounts.sql:/docker-entrypoint-initdb.d/02_accounts.sql:ro
+      - ./DB/procedures/sp_user.sql:/docker-entrypoint-initdb.d/03_sp_user.sql:ro
+      - ./DB/procedures/sp_favorite.sql:/docker-entrypoint-initdb.d/04_sp_favorite.sql:ro
+      - ./DB/dml/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+      - ./DB/ddl/docker_app_user.sql:/docker-entrypoint-initdb.d/06_app_user.sql:ro
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # 走 TCP，初始化期間的暫時伺服器不開網路，不會誤判為就緒
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/docker/backend.Dockerfile
+    environment:
+      FAVORITES_DB_URL: jdbc:mysql://db:3306/favorites
+      # 容器內要讓 Nginx 連得到，主機上不開這個埠
+      FAVORITES_BIND_ADDRESS: 0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:

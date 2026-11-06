@@ -1,0 +1,8 @@
+.git
+.idea
+**/node_modules
+frontend/dist
+backend/target
+deploy/certs
+deploy/logs
+deploy/temp
