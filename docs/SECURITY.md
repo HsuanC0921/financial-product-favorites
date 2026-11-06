@@ -1,6 +1,6 @@
 # 安全性
 
-[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · **安全性** · [測試](TESTING.md) · [開發模式](DEVELOPMENT.md)
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · **安全性** · [測試](TESTING.md) · [開發與部署](DEVELOPMENT.md)
 
 下表列出已處理的威脅和做法。本機部署才有的限制，見[已知限制](../README.md#已知限制)。
 
@@ -27,18 +27,24 @@
 
 ## 弱點掃描
 
-2026-11-06 掃描過一次，沒有需要修正的問題。
+2026-11-06 執行相依套件、程式碼、容器映像與網站掃描，結果如下。
 
 | 掃描 | 工具 | 範圍 | 結果 |
 | --- | --- | --- | --- |
 | 相依套件 | OSV-Scanner 2.7.0 | 後端 97 個套件，其中 60 個屬於 compile/runtime 相依套件、37 個只用於測試。前端 414 個套件，其中 24 個是 `vue` 與它的依賴，1 個是金額計算用的 `big.js`，其餘是建置與檢查工具。後端的 Java 排版工具另有 3 個 npm 套件 | 沒有已知弱點，前端另以 `npm audit` 確認 |
 | 執行中的網站 | OWASP ZAP 2.17.0，只做爬蟲與被動掃描 | 經 Nginx 的 `https://localhost` 與 `http://localhost`，未登入 | 沒有高、中風險，1 項低風險、4 項資訊提示 |
+| Java 程式碼 | SpotBugs 4.10.5 與 FindSecBugs 1.14.0 | 編譯後的後端程式 | 20 項提醒已逐項核對，沒有可重現的弱點 |
+| 容器映像 | Trivy 0.76.2 | 建置後的後端、Nginx 與 MySQL 映像 | 修補後 MySQL 從 99 項降至 0 項，後端從 59 項降至 49 項，Nginx 為 0 項。後端剩餘項目皆為中、低風險，發行版尚未提供修補版本 |
+
+Trivy 的項目以套件與弱點編號的組合計算，同一個弱點影響多個套件會重複列出。
 
 後端的版本由 Spring Boot 統一管理，OSV-Scanner 直接讀 `pom.xml` 只看得到 8 個沒有版本號的套件，所以改用 `mvnw dependency:list` 列出實際用到的版本再掃。
 
-ZAP 的低風險項目是 `XSRF-TOKEN` 沒有 HttpOnly。前端必須讀出這個值放進標頭，CSRF 防護才能運作，所以是刻意這樣設。Session Cookie 有設 HttpOnly。資訊提示中，「疑似洩漏資訊的註解」是壓縮後的 JS 裡出現 `select`、favicon 的授權註解裡出現 `from`，並不是 SQL。其餘 3 項只是說明：認出這是單頁應用、找到和 Session 有關的回應，以及提醒檢查 Cache-Control，首頁回 `no-cache` 是為了每次都拿到最新版本。
+未登入掃描的低風險項目是 `XSRF-TOKEN` 沒有 HttpOnly。前端必須讀出這個值放進標頭，CSRF 防護才能運作，所以是刻意這樣設。Session Cookie 有設 HttpOnly。資訊提示中，「疑似洩漏資訊的註解」是壓縮後的 JS 裡出現 `select`、favicon 的授權註解裡出現 `from`，並不是 SQL。其餘 3 項只是說明：認出這是單頁應用、找到和 Session 有關的回應，以及提醒檢查 Cache-Control，首頁回 `no-cache` 是為了每次都拿到最新版本。
 
-ZAP 沒有掃登入後的請求，登入後的 Cookie 屬性改由 `CookieAndSessionTests` 檢查。
+另以獨立資料庫完成登入後的 ZAP 主動掃描，共記錄 4,667 筆 HTTP 訊息，沒有高、中風險警告。JSON 原樣回傳 HTML 被列為低風險，已在實際瀏覽器確認名稱與備註以純文字顯示。掃描紀錄中的畸形查詢 `/api/favorites?=` 原本回 500，已修正為 400，並在既有真實 HTTP 測試補上斷言。登入後的 Cookie 屬性仍由 `CookieAndSessionTests` 檢查。
+
+映像修補包含系統套件更新，以及移除未使用的 MySQL Shell 與 gosu。三個服務均以非 root 帳號執行。Trivy 仍會將本機自簽 TLS 私鑰列為提示，該金鑰只在映像內，不納入版本控制。系統更新有建置快取，需要重新取得修補時使用 `docker compose build --pull --no-cache` 再啟動。
 
 ## 相依套件修補
 

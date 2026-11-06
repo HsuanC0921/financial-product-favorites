@@ -1,6 +1,6 @@
 # 系統架構與設計決策
 
-[專案說明](../README.md) · **架構** · [API](API.md) · [安全性](SECURITY.md) · [測試](TESTING.md) · [開發模式](DEVELOPMENT.md)
+[專案說明](../README.md) · **架構** · [API](API.md) · [安全性](SECURITY.md) · [測試](TESTING.md) · [開發與部署](DEVELOPMENT.md)
 
 ## 系統架構
 

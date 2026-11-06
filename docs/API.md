@@ -1,6 +1,6 @@
 # API 說明
 
-[專案說明](../README.md) · [架構](ARCHITECTURE.md) · **API** · [安全性](SECURITY.md) · [測試](TESTING.md) · [開發模式](DEVELOPMENT.md)
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · **API** · [安全性](SECURITY.md) · [測試](TESTING.md) · [開發與部署](DEVELOPMENT.md)
 
 除登入外，所有 API 都需要先登入。登入以表單格式送出，其餘請求與回應都是 JSON。
 

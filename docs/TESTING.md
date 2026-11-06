@@ -1,6 +1,6 @@
 # 測試
 
-[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · [安全性](SECURITY.md) · **測試** · [開發模式](DEVELOPMENT.md)
+[專案說明](../README.md) · [架構](ARCHITECTURE.md) · [API](API.md) · [安全性](SECURITY.md) · **測試** · [開發與部署](DEVELOPMENT.md)
 
 後端的整合測試連真實的 MySQL。Stored Procedure 沒辦法用記憶體資料庫模擬，所以執行前要先照 [DB/README.md](../DB/README.md) 建好資料庫與示範資料。寫入測試只用 seed 裡沒有喜好紀錄的使用者 C，建立的紀錄由測試自己刪掉。
 
@@ -34,7 +34,7 @@ npm exec -- stylelint "src/**/*.{css,vue}"
 | [FavoriteWriteTests](../backend/src/test/java/io/github/hsuanc0921/favorites/FavoriteWriteTests.java) | 5 | 新增、修改、刪除、版本衝突，同版本同時修改只有 1 個成功，各欄位上限與 HTML 都原樣存回，改用別人的扣款帳號時資料不變 |
 | [FavoriteTransactionTests](../backend/src/test/java/io/github/hsuanc0921/favorites/FavoriteTransactionTests.java) | 1 | 新增時 Like List 寫入失敗，確認 Spring 交易觸發回滾 |
 | [ApiIntegrationTests](../backend/src/test/java/io/github/hsuanc0921/favorites/ApiIntegrationTests.java) | 9 | 登入失敗不洩漏使用者 ID 是否存在、SQL Injection、未登入、缺少 CSRF Token、夾帶別人的使用者 ID、讀改刪別人的資料、重複登錄扣款帳號、扣款帳號格式 |
-| [CookieAndSessionTests](../backend/src/test/java/io/github/hsuanc0921/favorites/CookieAndSessionTests.java) | 3 | Cookie 的 HttpOnly、SameSite 與 HTTPS 下的 `Secure`，登入時換發 Session，登出後舊 Session 失效 |
+| [CookieAndSessionTests](../backend/src/test/java/io/github/hsuanc0921/favorites/CookieAndSessionTests.java) | 3 | Cookie 的 HttpOnly、SameSite 與 HTTPS 下的 `Secure`，登入時換發 Session，登出後舊 Session 失效，以及已登入的畸形查詢回 400 |
 | [JsonSmartSecurityTests](../backend/src/test/java/io/github/hsuanc0921/favorites/JsonSmartSecurityTests.java) | 1 | json-smart 弱點修補 |
 
 數量以 JUnit 與 Vitest 實際執行的案例計算，後端共 47 個，前端共 28 個。前端目前測的是金額與輸入檢查函式，不包含元件操作。
@@ -91,6 +91,8 @@ HTML 原樣回傳的測試只驗證資料保存，不等於已在瀏覽器驗證
 | 編輯時另一個請求先完成修改 | 收到 412，重新取得的摘要包含最新帳號與備註，使用者輸入仍保留，確認後可再次儲存 |
 | 價格超過上限 | 顯示實際上限，沒有送出新增請求 |
 | 桌面與窄螢幕 | 清單在 320～1280px、表單在 320、390、414、768px 寬度下沒有頁面橫向溢出，金額不以省略號截斷 |
+
+另以 axe-core 檢查登入、空清單、清單與新增、編輯、刪除對話框，共 9 組桌面與手機狀態，沒有自動判定的無障礙違規。
 
 ## 壓力測試
 

@@ -16,13 +16,16 @@
 
 畫面使用專案提供的示範資料。
 
-登入頁：
-
-![登入頁](docs/screenshots/login.png)
-
 喜好清單：
 
 ![喜好清單](docs/screenshots/list.png)
+
+<details>
+<summary>其他畫面</summary>
+
+登入頁：
+
+![登入頁](docs/screenshots/login.png)
 
 新增喜好的表單：
 
@@ -35,6 +38,8 @@
 手機寬度下，每一筆改成一張卡片：
 
 ![手機寬度的清單](docs/screenshots/list-mobile.png)
+
+</details>
 
 ## 設計重點
 
@@ -75,7 +80,7 @@
 | [docs/API.md](docs/API.md) | API 清單與狀態碼 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 已處理的安全威脅與做法、相依套件修補 |
 | [docs/TESTING.md](docs/TESTING.md) | 測試範圍與執行方式 |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 不經 Nginx 的開發模式 |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 手動部署、連線設定與 Vite 開發模式 |
 | [DB/README.md](DB/README.md) | 資料庫腳本的執行順序與重置方式 |
 
 ## 技術
@@ -109,93 +114,26 @@ financial-product-favorites/
 只需要安裝 Docker，不必另外裝 JDK、Node.js、MySQL 與 Nginx。在專案根目錄執行：
 
 ```powershell
-docker compose up
+docker compose up --build
 ```
 
-第一次會下載映像檔並建置，所需時間依網路速度而定。看到 3 個容器都啟動後，開啟 `https://localhost`，帳號密碼見[示範使用者](#示範使用者)。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。停止並清除資料庫：
+第一次會下載映像檔並建置，所需時間依網路速度而定。Nginx 會等待後端通過健康檢查才啟動，之後開啟 `https://localhost`，帳號密碼見[示範使用者](#示範使用者)。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。更新程式後也使用同一條指令重新建置。停止並保留資料庫：
+
+```powershell
+docker compose down
+```
+
+要清除資料庫並重置示範資料時，改用：
 
 ```powershell
 docker compose down -v
 ```
 
-容器版沿用同一份 `deploy/nginx.conf` 與 `DB/` 的腳本，差別有 3 處：
+連線密碼與資料卷初始化的說明，見 [Docker 設定](docs/DEVELOPMENT.md#docker-設定)。
 
-- Nginx 的自簽憑證在建置映像檔時產生，不需要手動安裝的步驟 3。
-- 建置後端時不跑測試，因為那時資料庫還沒有起來。
-- 後端與資料庫在不同的容器，所以多建一個連線來源為 `%` 的 `favorites_app`，權限同樣只有 EXECUTE，見 `DB/ddl/docker_app_user.sql`。
+### 手動部署
 
-主機只開放 Nginx 的 80 與 443。容器內的後端監聽所有介面，Nginx 才連得到，但它與資料庫的埠都沒有對主機開放，只有 Compose 內部的網路可連。80 或 443 已被占用時，例如本機已有別的網頁伺服器，要先停掉。容器版的資料庫密碼同樣是公開的示範值，對外開放前要同時改 `DB/ddl/docker_app_user.sql` 與 `FAVORITES_DB_PASSWORD`。
-
-### 手動安裝
-
-不使用 Docker 時，以下步驟以 Nginx、Spring Boot、MySQL 三層啟動，指令都在專案根目錄執行。
-
-#### 環境需求
-
-- JDK 21，並設定好 `JAVA_HOME`
-- Node.js 22.18 以上的 22.x，或 24.12 以上
-- MySQL 8.4，以及 `mysql` 命令列用戶端
-- Nginx 1.25.1 以上
-- OpenSSL，Git for Windows 已內附
-
-Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
-
-#### 1. 建立資料庫
-
-依 [DB/README.md](DB/README.md) 的順序，以管理員帳號執行 5 支腳本。腳本會建立資料庫、資料表、2 個資料庫帳號、Stored Procedure 與示範資料。
-
-#### 2. 建置
-
-後端建置時會跑[測試](docs/TESTING.md#範圍)，整合測試連的是步驟 1 建好的資料庫。
-
-```powershell
-cd backend
-.\mvnw.cmd package
-cd ..\frontend
-npm ci
-npm run build
-cd ..
-```
-
-#### 3. 產生本機憑證
-
-`deploy/certs/` 不納入版本控制，每台機器各自產生：
-
-```powershell
-New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
-& 'C:\Program Files\Git\usr\bin\openssl.exe' req -x509 -newkey rsa:2048 -nodes -days 365 -keyout deploy/certs/key.pem -out deploy/certs/cert.pem -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
-```
-
-#### 4. 啟動
-
-各開一個終端機，分別啟動後端與 Nginx：
-
-```powershell
-java -jar backend\target\financial-product-favorites-0.0.1-SNAPSHOT.jar
-```
-
-```powershell
-nginx -p deploy -c nginx.conf
-```
-
-開啟 `https://localhost`。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。`http://localhost` 會自動轉到 HTTPS。
-
-停止 Nginx：
-
-```powershell
-nginx -p deploy -c nginx.conf -s stop
-```
-
-### 設定
-
-後端的連線設定可用環境變數覆寫，預設值對應 DB 腳本建立的本機環境：
-
-| 環境變數 | 預設值 | 用途 |
-| --- | --- | --- |
-| `FAVORITES_DB_URL` | `jdbc:mysql://localhost:3306/favorites` | 資料庫連線 |
-| `FAVORITES_DB_USERNAME` | `favorites_app` | 只有 Stored Procedure 的 EXECUTE 權限 |
-| `FAVORITES_DB_PASSWORD` | 公開的本機示範值 | 部署到他人可連線的環境前，必須更換 |
-| `FAVORITES_BIND_ADDRESS` | `127.0.0.1` | 後端監聽位址 |
+環境需求、資料庫建立、建置與 Nginx 啟動步驟，見[本機開發與手動部署](docs/DEVELOPMENT.md#手動部署)。
 
 ### 示範使用者
 
@@ -220,7 +158,7 @@ cd ..\frontend
 npm run test:unit -- --run
 ```
 
-後端有 [47 個測試](docs/TESTING.md#範圍)，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 [28 個金額與輸入檢查案例](docs/TESTING.md#金額與輸入邊界)，另有[瀏覽器流程驗證](docs/TESTING.md#瀏覽器流程驗證)。
+後端有 [47 個測試](docs/TESTING.md#範圍)，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](docs/DEVELOPMENT.md#1-建立資料庫)。前端有 [28 個金額與輸入檢查案例](docs/TESTING.md#金額與輸入邊界)，另有[瀏覽器流程驗證](docs/TESTING.md#瀏覽器流程驗證)。
 
 壓測的操作情境、通過門檻、修正前後數據與資料庫查核，見[壓力測試結果](docs/TESTING.md#壓力測試)。尚未自動化與未涵蓋的部分，見[驗證限制](docs/TESTING.md#未自動化的部分)。
 
@@ -245,7 +183,7 @@ npm run test:unit -- --run
 | 軟刪除 | 實體刪除，無法復原 | 喜好相關的 Stored Procedure 都要加上過濾條件，也要決定已刪除的資料保留多久 |
 | 伺服器端的名稱搜尋 | 只在已載入的資料裡篩選 | 搜尋條件要和 `afterSn` 分頁一起設計。`LIKE '%字%'` 用不到索引，改用 FULLTEXT 又要設定中文分詞（ngram） |
 | 即時報價 | 價格由使用者自己輸入 | 串接報價來源要處理授權、延遲，以及來源失效時退回手動輸入 |
-| 持續的弱點掃描 | [弱點掃描](docs/SECURITY.md#弱點掃描)只做了一次，之後新公布的弱點不會自動發現 | 要定期排程執行，得先導入 CI，是否導入另行決定 |
+| 持續的弱點掃描 | [弱點掃描](docs/SECURITY.md#弱點掃描)目前手動執行，之後新公布的弱點不會自動發現 | 要定期排程執行，得先導入 CI，是否導入另行決定 |
 
 ## 第三方素材
 
