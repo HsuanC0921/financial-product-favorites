@@ -189,6 +189,7 @@ npm run test:unit -- --run
 
 - 頁面圖示使用 [Tabler Icons](https://github.com/tabler/tabler-icons) 的 `mountain`，採 MIT 授權，授權聲明保留在 `frontend/public/favicon.svg` 內。
 - 清單空狀態的圖示是 Tabler Icons 的 `inbox`，同樣採 MIT 授權，檔案是 `frontend/public/empty-list.svg`，只把線條顏色改成專案的灰色。
+- 備註圖示使用 Tabler Icons 的 `notes`，採 MIT 授權，檔案是 `frontend/public/notes.svg`，只調整了線條顏色。
 - 登入頁背景是 [Hero Patterns](https://heropatterns.com) 的 Topography 圖樣，作者 Steve Schoger，依該網站標示採 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 授權，檔案是 `frontend/public/topography.svg`，只調整了填色與透明度。
 
 ## 授權聲明

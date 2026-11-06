@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { ref, useId } from 'vue'
 import { shiftDecimal, withCommas } from '../amount'
 import type { Favorite } from '../types'
+
+const popupId = useId()
+const popupText = ref<string>()
 
 defineProps<{
   items: Favorite[]
@@ -29,8 +33,25 @@ function formatTime(iso: string): string {
       <tbody>
         <tr v-for="item in items" :key="item.sn">
           <td class="product" data-label="產品">
-            <strong>{{ item.productName }}</strong>
-            <small v-if="item.note">{{ item.note }}</small>
+            <div class="product-heading">
+              <button
+                class="link product-name"
+                :popovertarget="popupId"
+                @click="popupText = item.productName"
+              >
+                {{ item.productName }}
+              </button>
+              <button
+                v-if="item.note"
+                class="link text-preview"
+                :popovertarget="popupId"
+                :aria-label="`備註：${item.note}`"
+                @click="popupText = item.note"
+              >
+                <img src="/notes.svg" alt="" width="14" height="14" />
+                <span>{{ item.note }}</span>
+              </button>
+            </div>
             <small>{{ formatTime(item.createdAt) }}</small>
           </td>
           <td class="num qty" data-label="價格 × 數量">
@@ -39,9 +60,15 @@ function formatTime(iso: string): string {
           </td>
           <td class="account" data-label="扣款帳號">
             {{ item.account }}
-            <small v-if="accountNames.get(item.account)">{{
-              accountNames.get(item.account)
-            }}</small>
+            <button
+              v-if="accountNames.get(item.account)"
+              class="link text-preview"
+              :popovertarget="popupId"
+              :aria-label="`帳號暱稱：${accountNames.get(item.account)}`"
+              @click="popupText = accountNames.get(item.account)"
+            >
+              <span>{{ accountNames.get(item.account) }}</span>
+            </button>
           </td>
           <td class="num fee" data-label="總手續費">{{ withCommas(item.totalFee) }}</td>
           <td class="num total" data-label="預計扣款總金額">{{ withCommas(item.totalAmount) }}</td>
@@ -54,6 +81,7 @@ function formatTime(iso: string): string {
         </tr>
       </tbody>
     </table>
+    <div :id="popupId" class="text-popup" popover role="note">{{ popupText }}</div>
   </div>
 </template>
 
@@ -106,12 +134,65 @@ small {
   color: var(--muted);
 }
 
-.product strong {
-  display: block;
+.product-heading {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) minmax(3rem, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.product-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-decoration: none;
+}
+
+.text-preview {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  max-width: 12rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-align: left;
+  text-decoration: none;
+}
+
+.text-preview img {
+  flex-shrink: 0;
+}
+
+.text-preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-popup {
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1rem;
+  overflow: auto;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
 }
 
 .total {
   font-weight: 600;
+}
+
+.action-cell {
+  width: 1%;
 }
 
 .actions {
@@ -139,16 +220,9 @@ small {
   }
 
   tr {
-    display: grid;
-    grid-template-areas:
-      'product product'
-      'total total'
-      'qty qty'
-      'fee fee'
-      'account account'
-      'actions actions';
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.75rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
     align-items: start;
     padding: 0.875rem 1rem;
     margin-bottom: 0.75rem;
@@ -163,6 +237,7 @@ small {
   }
 
   td {
+    flex-basis: 100%;
     min-width: 0;
     padding: 0;
     overflow-wrap: anywhere;
@@ -170,7 +245,6 @@ small {
     border: 0;
   }
 
-  /* 標籤改成數值上方的小字，不佔一整列 */
   td::before {
     display: block;
     font-size: 0.875rem;
@@ -179,51 +253,75 @@ small {
   }
 
   .product {
-    grid-area: product;
+    display: grid;
+    grid-template-areas:
+      'name name'
+      'time note';
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 0.5rem;
+    align-items: center;
+  }
+
+  .product-heading {
+    display: contents;
+  }
+
+  .product-name {
+    grid-area: name;
+  }
+
+  .product > small {
+    grid-area: time;
+    white-space: nowrap;
+  }
+
+  .product .text-preview {
+    grid-area: note;
+    justify-self: end;
+    max-width: 8rem;
   }
 
   .product::before {
     content: none;
   }
 
-  .total {
+  .num {
     display: flex;
     flex-wrap: wrap;
-    grid-area: total;
-    gap: 0.25rem 1rem;
+    gap: 0 1rem;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: flex-end;
+    order: 1;
+    white-space: nowrap;
+  }
+
+  .total {
+    gap: 0.25rem 1rem;
+    order: 0;
     font-size: 1.125rem;
-    white-space: nowrap;
-  }
-
-  .qty {
-    grid-area: qty;
-    text-align: left;
-    white-space: nowrap;
-  }
-
-  .fee {
-    grid-area: fee;
-    text-align: left;
-    white-space: nowrap;
   }
 
   .account {
-    grid-area: account;
+    flex: 1 1 auto;
+    order: 2;
+    font-size: 0.875rem;
   }
 
   .action-cell {
-    grid-area: actions;
-    align-self: end;
+    flex-basis: auto;
+    align-self: flex-end;
+    order: 2;
+    width: auto;
+    margin-left: auto;
   }
 
-  td:not(.product) small {
-    display: inline;
+  .num::before {
+    margin-right: auto;
   }
 
   td.qty small {
-    display: block;
+    flex-basis: 100%;
+    text-align: right;
   }
 
   .actions {
@@ -231,7 +329,8 @@ small {
   }
 
   .actions button {
-    min-height: 2.25rem;
+    min-height: 2.75rem;
+    padding-inline: 0.65rem;
   }
 }
 </style>
