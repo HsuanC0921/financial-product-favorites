@@ -3,6 +3,7 @@ package io.github.hsuanc0921.favorites.presentation;
 import io.github.hsuanc0921.favorites.common.ApiError;
 import io.github.hsuanc0921.favorites.common.BusinessException;
 import io.github.hsuanc0921.favorites.common.FavoriteNotFoundException;
+import org.apache.tomcat.util.http.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +29,13 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(BusinessException.class)
 	ResponseEntity<ApiError> business(BusinessException ex) {
 		return ResponseEntity.status(ex.status()).body(ex.error());
+	}
+
+	// Tomcat 解析參數失敗時，保留容器提供的請求錯誤狀態碼
+	@ExceptionHandler(InvalidParameterException.class)
+	ResponseEntity<ApiError> invalidParameters(InvalidParameterException ex) {
+		HttpStatus status = HttpStatus.valueOf(ex.getErrorCode());
+		return ResponseEntity.status(status).body(ApiError.of(status));
 	}
 
 	@ExceptionHandler(Exception.class)
