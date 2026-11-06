@@ -92,7 +92,7 @@ Content-Type: application/json
 
 ## 狀態碼
 
-錯誤一律回 `{"code": "...", "message": "..."}`，`code` 供程式判斷，`message` 是給使用者看的訊息。
+後端 API 的錯誤回應為 `{"code": "...", "message": "..."}`，`code` 供程式判斷，`message` 是給使用者看的訊息。Nginx 產生的錯誤不一定是 JSON，例如超過 64 KB 的請求會回 413 與 HTML 錯誤頁，前端會顯示通用錯誤訊息。
 
 | 狀態碼 | `code` | 意思 |
 | --- | --- | --- |
