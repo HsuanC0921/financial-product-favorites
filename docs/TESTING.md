@@ -39,6 +39,27 @@ npm exec -- stylelint "src/**/*.{css,vue}"
 
 金額案例只維護一份，放在 `backend/src/test/resources/fee-cases.csv`，前後端的單元測試都讀它。任何一邊的計算規則改了，測試就會失敗，表單的預估金額不會跟實際存進去的對不上。
 
+## 壓力測試
+
+用 k6 對整套 Docker 服務（Nginx、Spring Boot、MySQL）施壓，腳本是 [`deploy/loadtest/favorites.js`](../deploy/loadtest/favorites.js)。5 位示範使用者各登入一次，所有虛擬使用者共用這 5 個 Session，因為 Nginx 限制登入每分鐘 10 次。操作比例是查清單 70%、查使用者資料 10%、新增修改刪除一輪 20%，新增的資料當場刪除，不留紀錄。虛擬使用者在 15 秒內升到 10 人，再升到 50 人並維持 30 秒，最後降回 0，全程約 90 秒。
+
+先用 `docker compose up -d --build` 啟動服務，再執行：
+
+```powershell
+docker run --rm --network financial-product-favorites_default -v "${PWD}/deploy/loadtest:/scripts:ro" -e BASE_URL=https://web grafana/k6 run /scripts/favorites.js
+```
+
+`--network` 的名稱是 Compose 專案名稱加 `_default`。加上 `-e THINK_TIME=0` 會讓每個虛擬使用者不停頓地連續送請求，用來找出吞吐量的上限，預設是每次操作之間停 0.5 秒。門檻是錯誤率低於 1%、p95 延遲低於 500 ms。
+
+測試環境是一台 Windows 電腦上的 Docker Desktop，三個容器與 k6 都在同一台機器，所以數字只能當展示用的基準，不代表正式環境的容量。
+
+| 停頓 | 請求數 | 每秒請求數 | p95 延遲 | 錯誤率 | 門檻 |
+| --- | --- | --- | --- | --- | --- |
+| 0.5 秒 | 7,977 | 87 | 3.61 ms | 0% | 通過 |
+| 0 秒 | 63,487 | 698 | 131.81 ms | 20.13% | 未通過 |
+
+不停頓時有 20% 的請求回 502。Nginx 的錯誤記錄是 `connect() to 後端 failed (99: Address not available)`，原因是 Nginx 對後端的每個請求都新開一條 TCP 連線，每秒約 700 個請求時，本機可用的暫時埠被用光。後端本身沒有錯誤記錄，也沒有重啟。
+
 ## 未自動化的部分
 
 Nginx 的 HTTPS 轉址、安全標頭與登入限流沒有自動化測試，目前以 `curl` 手動確認。安全標頭另以 ZAP 被動掃描過，見[弱點掃描](SECURITY.md#弱點掃描)。Docker Compose 的啟動也沒有自動化，以手動啟動後登入、新增、查詢與刪除確認過。前端元件與 `api.ts` 的錯誤處理也還沒有測試。

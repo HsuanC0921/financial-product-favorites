@@ -196,7 +196,7 @@ cd ..\frontend
 npm run test:unit -- --run
 ```
 
-後端 47 個測試，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 28 個。各測試涵蓋的範圍與程式碼檢查指令見 [docs/TESTING.md](docs/TESTING.md)。
+後端 47 個測試，其中整合測試連真實的 MySQL，執行前要先完成[建立資料庫](#1-建立資料庫)。前端有 28 個。各測試涵蓋的範圍、程式碼檢查指令與壓力測試結果見 [docs/TESTING.md](docs/TESTING.md)。
 
 ## 已知限制
 
