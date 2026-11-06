@@ -37,6 +37,7 @@ function formatTime(iso: string): string {
               <button
                 class="link product-name"
                 :popovertarget="popupId"
+                popovertargetaction="show"
                 @click="popupText = item.productName"
               >
                 {{ item.productName }}
@@ -45,6 +46,7 @@ function formatTime(iso: string): string {
                 v-if="item.note"
                 class="link text-preview"
                 :popovertarget="popupId"
+                popovertargetaction="show"
                 :aria-label="`備註：${item.note}`"
                 @click="popupText = item.note"
               >
@@ -64,6 +66,7 @@ function formatTime(iso: string): string {
               v-if="accountNames.get(item.account)"
               class="link text-preview"
               :popovertarget="popupId"
+              popovertargetaction="show"
               :aria-label="`帳號暱稱：${accountNames.get(item.account)}`"
               @click="popupText = accountNames.get(item.account)"
             >

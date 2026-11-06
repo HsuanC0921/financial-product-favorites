@@ -12,7 +12,7 @@
 | 傳輸竊聽 | 只透過 HTTPS（TLS 1.2 與 1.3）提供服務，HTTP 一律轉到 HTTPS，並送出 HSTS。經由 HTTPS 時，Session 和 `XSRF-TOKEN` Cookie 都會帶 `Secure`。 |
 | 暴力猜密碼 | Nginx 限制同一個來源位址每分鐘登入 10 次，另外容許 5 次突發，超過回 429。 |
 | 點擊劫持與內容嗅探 | 回應帶 `X-Frame-Options: DENY` 和 CSP 的 `frame-ancestors 'none'`，頁面不能被嵌進別人的框架。`X-Content-Type-Options: nosniff` 不讓瀏覽器自己猜檔案類型。另外還設了 `Referrer-Policy: no-referrer` 與 `Permissions-Policy`。 |
-| 繞過 Web Server | 後端只聽 `127.0.0.1`，其他主機只能經過 Nginx，限流和安全標頭就繞不過去。`X-Forwarded-*` 標頭也只有本機的 Nginx 送得進來。 |
+| 繞過 Web Server | 手動部署時，後端只聽 `127.0.0.1`，其他主機只能經過 Nginx。容器版不對主機開放後端埠，見 [Docker 設定](DEVELOPMENT.md#docker-設定)。 |
 | 密碼保存 | 密碼用 BCrypt（強度 12）存雜湊，不存明文。 |
 | 使用者 ID 列舉 | 密碼錯誤和使用者 ID 不存在，回應一模一樣。使用者 ID 不存在時，Spring 會用同強度的假雜湊比對，所以兩種情況花的時間也差不多。 |
 | Session | Session Cookie 設成 HttpOnly 與 SameSite=Lax，閒置 30 分鐘就過期，登入時換發新的 Session，降低 Session Fixation 的風險。沒登入的請求不會建立 Session。 |
