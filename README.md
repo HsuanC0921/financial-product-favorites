@@ -12,6 +12,30 @@
 - 新增自己的扣款帳號。
 - 兩個人同時修改同一筆資料時，後送出的人會收到衝突提示，而不是悄悄覆蓋。
 
+## 畫面
+
+畫面使用專案提供的示範資料。
+
+登入頁：
+
+![登入頁](docs/screenshots/login.png)
+
+喜好清單：
+
+![喜好清單](docs/screenshots/list.png)
+
+新增喜好的表單：
+
+![新增喜好](docs/screenshots/form.png)
+
+還沒有任何紀錄時：
+
+![清單為空](docs/screenshots/empty.png)
+
+手機寬度下，每一筆改成一張卡片：
+
+![手機寬度的清單](docs/screenshots/list-mobile.png)
+
 ## 設計重點
 
 下列幾項是設計時做過取捨的地方，原因寫在各份文件：
