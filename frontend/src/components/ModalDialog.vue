@@ -29,6 +29,7 @@ onBeforeUnmount(() => dialog.value?.close())
 dialog {
   width: min(36rem, calc(100vw - 2rem));
   padding: 1.25rem;
+  overflow-wrap: anywhere;
   border: 0;
   border-radius: 10px;
   box-shadow: 0 12px 32px rgb(16 24 40 / 20%);

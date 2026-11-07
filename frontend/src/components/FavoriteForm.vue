@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, nextTick, ref, useId } from 'vue'
 import {
   ApiError,
   addAccount,
@@ -69,9 +69,14 @@ function toInput(): FavoriteInput {
   }
 }
 
-async function submit() {
+async function submit(event: SubmitEvent) {
   submitted.value = true
-  if (hasErrors.value) return
+  if (hasErrors.value) {
+    const form = event.currentTarget as HTMLFormElement
+    await nextTick()
+    form.querySelector<HTMLInputElement>('[aria-invalid="true"]')!.focus()
+    return
+  }
   busy.value = true
   error.value = ''
   try {

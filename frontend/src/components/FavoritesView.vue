@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ApiError, deleteFavorite, errorMessage, getFavorite, listFavorites } from '../api'
+import { withCommas } from '../amount'
 import type { Favorite, Me } from '../types'
 import FavoriteForm from './FavoriteForm.vue'
 import FavoriteTable from './FavoriteTable.vue'
@@ -198,6 +199,11 @@ onMounted(reload)
 
   <ModalDialog v-if="deleting" title="刪除喜好" :busy="deleteBusy" @close="deleting = null">
     <p>確定要刪除「{{ deleting.productName }}」嗎？刪除後無法復原。</p>
+    <p class="subtitle">
+      扣款帳號 {{ deleting.account }}，購買數量
+      {{ withCommas(String(deleting.purchaseQuantity)) }}， 預計扣款總金額
+      {{ withCommas(deleting.totalAmount) }}（新台幣）
+    </p>
     <p v-if="deleteError" class="error" role="alert">{{ deleteError }}</p>
     <div class="dialog-actions">
       <button :disabled="deleteBusy" @click="deleting = null">取消</button>
