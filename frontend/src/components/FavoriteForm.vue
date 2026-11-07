@@ -44,7 +44,7 @@ const latestSummary = ref('')
 
 const errors = computed(() => ({
   productName: productName.value.trim() ? '' : '請輸入產品名稱',
-  price: isPrice(price.value) ? '' : '單價須介於 0.01 到 9,999,999,999.99，最多兩位小數',
+  price: isPrice(price.value) ? '' : '產品價格須介於 0.01 到 9,999,999,999.99，最多兩位小數',
   percent: isPercent(percent.value) ? '' : '請輸入 0 到 100 的費率，最多六位小數',
   quantity: isQuantity(quantity.value) ? '' : '請輸入 1 到 1,000,000 的整數',
 }))
@@ -100,7 +100,7 @@ async function reloadVersion() {
     const latest = await getFavorite(props.favorite.sn)
     version.value = latest.version
     latestSummary.value =
-      `目前資料庫裡是：${latest.productName}，價格 ${latest.price}，` +
+      `目前資料庫裡是：${latest.productName}，產品價格 ${latest.price}，` +
       `費率 ${shiftDecimal(latest.feeRate, 2)}%，數量 ${latest.purchaseQuantity}，` +
       `扣款帳號 ${latest.account}，備註 ${latest.note || '未填寫'}`
     conflict.value = false
@@ -168,7 +168,7 @@ async function submitAccount() {
       />
       <TextField
         v-model="price"
-        label="價格"
+        label="產品價格"
         inputmode="decimal"
         :error="shown?.price"
         :disabled="busy || accountBusy"
@@ -247,8 +247,10 @@ async function submitAccount() {
       </div>
 
       <p v-if="preview" class="preview" aria-live="polite">
-        預估總手續費 {{ withCommas(preview.fee) }}，預計扣款總金額
-        {{ withCommas(preview.total) }}（新台幣）
+        <span class="subtitle">預估總手續費用</span>
+        <span class="preview-value">{{ withCommas(preview.fee) }}</span>
+        <span class="subtitle">預計扣款總金額</span>
+        <strong class="preview-value">{{ withCommas(preview.total) }}</strong>
       </p>
 
       <p v-if="error" class="error" role="alert">
@@ -262,6 +264,7 @@ async function submitAccount() {
       </p>
 
       <div class="dialog-actions">
+        <span class="subtitle currency"><span aria-hidden="true">ⓘ</span> 新台幣計價</span>
         <button type="button" :disabled="busy || accountBusy" @click="emit('close')">取消</button>
         <button class="primary" :disabled="busy || accountBusy || addingAccount">
           {{ busy ? '儲存中…' : '儲存' }}
@@ -300,7 +303,16 @@ async function submitAccount() {
   border-radius: 6px;
 }
 
+.currency {
+  align-self: center;
+  margin-right: auto;
+}
+
 .preview {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
   padding: 0.5rem 0.75rem;
   margin: 0;
   font-variant-numeric: tabular-nums;
@@ -308,8 +320,17 @@ async function submitAccount() {
   border-radius: 6px;
 }
 
+.preview-value {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 /* 窄螢幕：價格與費率仍並排，數量與扣款帳號（下拉文字較長）各占一列 */
 @media (width <= 560px) {
+  .preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .favorite-form > .wide-narrow {
     grid-column: 1 / -1;
   }

@@ -1,6 +1,6 @@
 # 金融商品喜好紀錄系統
 
-登入後可記錄自己的金融商品喜好、預計購買數量與扣款帳號。系統依價格、數量與手續費率計算預計扣款的總手續費與總金額。
+登入後可記錄自己的金融商品喜好、預計購買數量與扣款帳號。系統依產品價格、購買數量與手續費率，計算總手續費用與預計扣款總金額。
 
 本專案是面試作業，依題目要求設計為三層式架構：Web Server 與 Application Server 分開，資料存放在關聯式資料庫，後端的資料庫存取一律透過 Stored Procedure。
 
@@ -9,8 +9,8 @@
 ## 功能
 
 - 登入與登出，每位使用者只看得到自己的資料。
-- 查詢喜好清單：產品名稱、扣款帳號、總手續費、總金額，並顯示使用者的 Email。清單每次載入最多 100 筆，可用「載入更多」接續。
-- 新增、修改、刪除喜好。表單即時預估手續費與總金額。
+- 查詢喜好清單：產品名稱、扣款帳號、總手續費用、預計扣款總金額，並顯示使用者的 Email。每次最多載入 100 筆，可用「載入更多」接續。
+- 新增、修改、刪除喜好，表單提供即時金額試算。
 - 新增自己的扣款帳號。
 - 同一筆資料的並行修改以版本號檢查，版本過期時顯示衝突提示。
 
@@ -60,7 +60,7 @@
 | 題目要求 | 實作與位置 |
 | --- | --- |
 | 新增、查詢、刪除、修改喜好 | 介面在 `FavoritesView`，後端由 `FavoriteController` 提供 API，規格見 [docs/API.md](docs/API.md) |
-| 查詢顯示產品名稱清單、扣款帳號、總金額、總手續費、使用者 Email | 清單每筆列出產品名稱、扣款帳號、總手續費與預計扣款總金額，Email 顯示在頁首 |
+| 查詢顯示產品名稱清單、扣款帳號、預計扣款總金額、總手續費用、使用者 Email | 清單逐筆列出，Email 顯示在頁首 |
 | Web Server、Application Server 與關聯式資料庫的三層式架構 | Nginx（設定在 `deploy/nginx.conf`）、Spring Boot、MySQL。對外入口為 Nginx，後端連線設定見[開發與部署](docs/DEVELOPMENT.md) |
 | 後端分為 Presentation、Business、Data、Shared 4 層 | `presentation`、`service`、`repository`、`common` 4 個套件，說明見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 前端使用 Vue.js | Vue 3、TypeScript |

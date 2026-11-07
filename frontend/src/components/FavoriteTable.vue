@@ -23,9 +23,9 @@ function formatTime(iso: string): string {
       <thead>
         <tr>
           <th>產品</th>
-          <th class="num">價格 × 數量</th>
+          <th class="num">產品價格 × 數量</th>
           <th>扣款帳號</th>
-          <th class="num">總手續費</th>
+          <th class="num">總手續費用</th>
           <th class="num">預計扣款總金額</th>
           <th><span class="visually-hidden">操作</span></th>
         </tr>
@@ -56,7 +56,7 @@ function formatTime(iso: string): string {
             </div>
             <small>{{ formatTime(item.createdAt) }}</small>
           </td>
-          <td class="num qty" data-label="價格 × 數量">
+          <td class="num qty" data-label="產品價格 × 數量">
             {{ withCommas(item.price) }} × {{ withCommas(String(item.purchaseQuantity)) }}
             <small>費率 {{ shiftDecimal(item.feeRate, 2) }}%</small>
           </td>
@@ -73,7 +73,7 @@ function formatTime(iso: string): string {
               <span>{{ accountNames.get(item.account) }}</span>
             </button>
           </td>
-          <td class="num fee" data-label="總手續費">{{ withCommas(item.totalFee) }}</td>
+          <td class="num fee" data-label="總手續費用">{{ withCommas(item.totalFee) }}</td>
           <td class="num total" data-label="預計扣款總金額">{{ withCommas(item.totalAmount) }}</td>
           <td class="action-cell">
             <div class="actions">
