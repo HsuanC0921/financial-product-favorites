@@ -47,7 +47,7 @@ New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
 兩個終端機都從專案根目錄執行。自訂[連線設定](#設定)時，建置與啟動後端的終端機須設相同環境變數。
 
 ```powershell
-java -jar backend\target\financial-product-favorites-1.0.1.jar
+java -jar backend\target\financial-product-favorites-1.0.2.jar
 ```
 
 看到 `Started FinancialProductFavoritesApplication` 後，在另一個終端機啟動 Nginx：
