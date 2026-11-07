@@ -92,6 +92,18 @@ docker compose up --build
 
 `DB/` 的初始化腳本只在資料卷為空時執行。已有資料卷時，修改 SQL 檔案不會自動套用，包含帳號密碼。需要保留資料時，請以資料庫管理員執行對應 SQL 或修改帳號密碼。確定要重置時才使用 `down -v`。
 
+### Windows 容器模式
+
+先啟動 [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)，等待引擎啟動。Linux 容器是 Docker Desktop 的預設模式。
+
+在 Windows 工作列通知區的 Docker 圖示按右鍵。若選單顯示「Switch to Linux containers」，選取後等待切換完成。若顯示「Switch to Windows containers」，表示目前已在 Linux 容器模式，不必切換。
+
+在 PowerShell 執行下列指令，輸出 `linux` 就可以繼續。專案原始碼依[用 Docker 啟動](../README.md#用-docker-啟動)操作，預建套件則依壓縮檔內的 README 操作。
+
+```powershell
+docker info --format '{{.OSType}}'
+```
+
 ## 開發模式
 
 開發時不經過 Nginx，前端由 Vite 開發伺服器提供，前端程式碼存檔後畫面立即更新。這個模式走 HTTP，沒有 TLS 與 Nginx 加的安全標頭，只用於開發。

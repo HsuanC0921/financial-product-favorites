@@ -112,6 +112,8 @@ financial-product-favorites/
 
 ### 用 Docker 啟動
 
+Windows 請先啟動 Docker Desktop，確認使用 Linux 容器模式，操作方式見 [Windows 容器模式](docs/DEVELOPMENT.md#windows-容器模式)。
+
 只需要安裝 Docker，不必另外裝 JDK、Node.js、MySQL 與 Nginx。在專案根目錄執行：
 
 ```powershell
