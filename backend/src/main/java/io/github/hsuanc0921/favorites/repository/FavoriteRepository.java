@@ -135,7 +135,7 @@ public class FavoriteRepository {
 				}
 			}
 			if (sql.getErrorCode() == ER_NO_REFERENCED_ROW) {
-				return new BusinessException(HttpStatus.UNPROCESSABLE_ENTITY, ApiError.UNKNOWN_ACCOUNT);
+				return new BusinessException(HttpStatus.UNPROCESSABLE_CONTENT, ApiError.UNKNOWN_ACCOUNT);
 			}
 		}
 		return e;
