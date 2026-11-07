@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>io.github.hsuanc0921</groupId>
 	<artifactId>financial-product-favorites</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>FinancialProductFavorites</name>
 	<description>Financial product favorites recording system</description>
 	<properties>

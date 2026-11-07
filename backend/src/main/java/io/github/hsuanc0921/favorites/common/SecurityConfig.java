@@ -19,7 +19,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 /**
  * 登入、登出、CSRF 與 Session 的安全設定
  * <ul>
- * <li>除登入與錯誤頁外，所有 API 都要先登入</li>
+ * <li>使用者資料、扣款帳號與喜好相關 API 都要先登入</li>
  * <li>登入用表單格式送出，成功回 204，Session Cookie 為 HttpOnly</li>
  * <li>CSRF 採「Cookie 加標頭」：伺服器發一個前端腳本讀得到的 XSRF-TOKEN Cookie，
  * 前端把同一個值放進 X-XSRF-TOKEN 標頭，兩者不符回 403</li>

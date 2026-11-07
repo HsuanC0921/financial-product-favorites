@@ -47,7 +47,7 @@ New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
 各開一個終端機，分別啟動後端與 Nginx：
 
 ```powershell
-java -jar backend\target\financial-product-favorites-1.0.0.jar
+java -jar backend\target\financial-product-favorites-1.0.1.jar
 ```
 
 ```powershell
