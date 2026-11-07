@@ -4,25 +4,25 @@
 
 ## 手動部署
 
-不使用 Docker 時，以下步驟以 Nginx、Spring Boot、MySQL 三層啟動，指令都在專案根目錄執行。
+以下使用 Windows PowerShell。除另有說明外，從專案根目錄執行。
 
 ### 環境需求
 
 - JDK 21，並設定好 `JAVA_HOME`
 - Node.js 22.18 以上的 22.x，或 24.12 以上
-- MySQL 8.4，以及 `mysql` 命令列用戶端
-- Nginx 1.25.1 以上
+- MySQL 8.4 與 `mysql` 用戶端，服務須已監聽 `localhost:3306`
+- Nginx 1.25.1 以上，`nginx` 須在 PATH 內
 - OpenSSL，Git for Windows 已內附
 
-Maven 由專案內的 Maven Wrapper 提供，不需要另外安裝。
+使用專案內的 Maven Wrapper。80、443、8080 埠須可用，若本專案的 Docker 服務仍在執行，先用 `docker compose down` 停止。
 
 ### 1. 建立資料庫
 
-依 [DB/README.md](../DB/README.md) 的順序，以管理員帳號執行 5 支腳本。腳本會建立資料庫、資料表、2 個資料庫帳號、Stored Procedure 與示範資料。
+在 `DB` 資料夾依 [DB/README.md](../DB/README.md) 執行 5 支腳本，完成後回到專案根目錄。
 
 ### 2. 建置
 
-後端建置時會跑[測試](TESTING.md#範圍)，整合測試連的是步驟 1 建好的資料庫。
+建置會跑[測試](TESTING.md#範圍)，須先完成步驟 1。
 
 ```powershell
 cd backend
@@ -35,7 +35,7 @@ cd ..
 
 ### 3. 產生本機憑證
 
-`deploy/certs/` 不納入版本控制，每台機器各自產生：
+`deploy/certs/` 不納入版本控制。下方使用 Git for Windows 的預設 OpenSSL 路徑，安裝位置不同時請調整：
 
 ```powershell
 New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
@@ -44,17 +44,19 @@ New-Item -ItemType Directory -Force deploy\certs, deploy\logs, deploy\temp
 
 ### 4. 啟動
 
-各開一個終端機，分別啟動後端與 Nginx：
+兩個終端機都從專案根目錄執行。自訂[連線設定](#設定)時，建置與啟動後端的終端機須設相同環境變數。
 
 ```powershell
 java -jar backend\target\financial-product-favorites-1.0.1.jar
 ```
 
+看到 `Started FinancialProductFavoritesApplication` 後，在另一個終端機啟動 Nginx：
+
 ```powershell
 nginx -p deploy -c nginx.conf
 ```
 
-開啟 `https://localhost`，帳號密碼見[示範使用者](../README.md#示範使用者)。憑證是自簽的，瀏覽器會警告不受信任，選擇繼續前往即可。`http://localhost` 會自動轉到 HTTPS。
+開啟 `https://localhost`，以[示範使用者](../README.md#示範使用者)登入。自簽憑證警告選擇繼續即可，HTTP 會轉到 HTTPS。
 
 停止 Nginx：
 
@@ -64,7 +66,7 @@ nginx -p deploy -c nginx.conf -s stop
 
 ## 設定
 
-後端的連線設定可用環境變數覆寫，預設值對應 DB 腳本建立的本機環境：
+後端連線可用環境變數覆寫，預設值對應 DB 腳本：
 
 | 環境變數 | 預設值 | 用途 |
 | --- | --- | --- |
@@ -75,15 +77,15 @@ nginx -p deploy -c nginx.conf -s stop
 
 ## Docker 設定
 
-容器版沿用同一份 `deploy/nginx.conf` 與 `DB/` 的腳本，主要差別如下：
+容器版沿用 `deploy/nginx.conf` 與 `DB/` 腳本，差異如下：
 
-- Nginx 的自簽憑證由各容器首次啟動時產生，重啟沿用，不放進映像檔。不需要手動執行[產生本機憑證](#3-產生本機憑證)的步驟。
-- 建置後端時不跑測試，因為那時資料庫還沒有起來。
-- 後端與資料庫在不同的容器，所以多建一個連線來源為 `%` 的 `favorites_app`，權限同樣只有 EXECUTE，見 `DB/ddl/docker_app_user.sql`。
+- Nginx 首次啟動時自動產生自簽憑證，重啟沿用，私鑰不放進映像檔。
+- 建置後端時不跑測試，該階段尚無資料庫。
+- 後端以 `favorites_app@'%'` 連線，權限只有 EXECUTE，見 `DB/ddl/docker_app_user.sql`。
 
 主機只開放 Nginx 的 80 與 443。容器內的後端監聽所有介面，Nginx 才連得到，但它與資料庫的埠都沒有對主機開放，只有 Compose 內部的網路可連。80 或 443 已被占用時，例如本機已有別的網頁伺服器，要先停掉。容器版的資料庫密碼同樣是公開的示範值，對外開放前要同時改 `DB/ddl/docker_app_user.sql` 與 `FAVORITES_DB_PASSWORD`。
 
-PowerShell 的環境變數要設在執行 Compose 的同一個終端機，也可在專案根目錄的 `.env` 設定同名變數。`.env` 不納入版本控制：
+PowerShell 環境變數須設在執行 Compose 的終端機，也可寫入專案根目錄的 `.env`（不納入版本控制）：
 
 ```powershell
 $env:FAVORITES_DB_PASSWORD = '你的資料庫密碼'
@@ -94,15 +96,18 @@ docker compose up --build
 
 ### Windows 容器模式
 
-先啟動 [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)，等待引擎啟動。Linux 容器是 Docker Desktop 的預設模式。
+啟動 [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)，等引擎就緒後，在 Windows 工作列通知區的 Docker 圖示按右鍵：
 
-在 Windows 工作列通知區的 Docker 圖示按右鍵。若選單顯示「Switch to Linux containers」，選取後等待切換完成。若顯示「Switch to Windows containers」，表示目前已在 Linux 容器模式，不必切換。
+- 「Switch to Linux containers」：選取後等待切換完成。
+- 「Switch to Windows containers」：目前已在 Linux 容器模式，不必切換。
 
-在 PowerShell 執行下列指令，輸出 `linux` 就可以繼續。專案原始碼依[用 Docker 啟動](../README.md#用-docker-啟動)操作，預建套件則依壓縮檔內的 README 操作。
+在 PowerShell 確認模式，應輸出 `linux`。此指令僅查詢，不會切換：
 
 ```powershell
 docker info --format '{{.OSType}}'
 ```
+
+確認後依[用 Docker 啟動](../README.md#用-docker-啟動)或預建套件的 README 操作。
 
 ## 開發模式
 
